@@ -508,14 +508,14 @@ Public Class frmMain
                 For Each objAssetInside In objAsset.Items
                     If objAsset.LocationId > 0 Then
                         If objParent IsNot Nothing Then
-                            sFlag = IIf(objParent.Flag > 0, " ( " & dicFlags(objParent.Flag).FlagText & " )", "").ToString
-                            fAddAssetToTable(objAssetInside, bCharAsset, objAsset, objAsset.LocationId, EVEItem.Find(objParent.TypeId).TypeName & " / " & objItem.TypeName)
+                            sFlag = IIf(objParent.Flag > 0 And Not dicFlags(objAsset.Flag).FlagName.Equals("Locked") And Not dicFlags(objAsset.Flag).FlagName.Equals("Unlocked"), " ( " & dicFlags(objParent.Flag).FlagText & " )", "").ToString
+                            fAddAssetToTable(objAssetInside, bCharAsset, objAsset, objAsset.LocationId, EVEItem.Find(objParent.TypeId).TypeName & sFlag & " / " & objItem.TypeName)
                         Else
                             fAddAssetToTable(objAssetInside, bCharAsset, objAsset, objAsset.LocationId, objItem.TypeName)
                         End If
                     Else
                         If objParent IsNot Nothing Then
-                            sFlag = IIf(objParent.Flag > 0, " ( " & dicFlags(objParent.Flag).FlagText & " )", "").ToString
+                            sFlag = IIf(objParent.Flag > 0 And Not dicFlags(objAsset.Flag).FlagName.Equals("Locked") And Not dicFlags(objAsset.Flag).FlagName.Equals("Unlocked"), " ( " & dicFlags(objParent.Flag).FlagText & " )", "").ToString
                             If objParent.LocationId > 0 Then
                                 fAddAssetToTable(objAssetInside, bCharAsset, objAsset, objParent.LocationId, EVEItem.Find(objParent.TypeId).TypeName & sFlag & " / " & objItem.TypeName)
                             Else
@@ -577,7 +577,7 @@ Public Class frmMain
                 If dicFlags(objAsset.Flag).FlagText = "None" Then
                     drAssets("Container") = sContainer
                 Else
-                    If Not dicFlags(objAsset.Flag).FlagName.Equals("Locked") And dicFlags(objAsset.Flag).FlagName.Equals("Unlocked") Then
+                    If Not dicFlags(objAsset.Flag).FlagName.Equals("Locked") And Not dicFlags(objAsset.Flag).FlagName.Equals("Unlocked") Then
                         drAssets("Container") = sContainer & " ( " & dicFlags(objAsset.Flag).FlagText & " )"
                     Else
                         drAssets("Container") = sContainer
@@ -585,7 +585,11 @@ Public Class frmMain
                 End If
                 'drAssets("Container") = sContainer
             Else
-                drAssets("Container") = "Hanger"
+                If bCharAsset Then
+                    drAssets("Container") = "Hanger"
+                Else
+                    drAssets("Container") = "Space"
+                End If
             End If
 
             objNewAsset.Container = drAssets("Container").ToString
