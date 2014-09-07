@@ -33,8 +33,8 @@ Public Class frmMain
 
     Private listAssets As Models.EveApiResponse(Of Models.Character.AssetList)
     Private listCorpAssets As Models.EveApiResponse(Of Models.Character.AssetList)
-    'Private listOrders As List(Of MarketOrder)
-    'Private listCorpOrders As List(Of MarketOrder)
+    Private listOrders As Models.EveApiResponse(Of Models.Character.MarketOrders)
+    Private listCorpOrders As Models.EveApiResponse(Of Models.Character.MarketOrders)
     'Private listJournal As List(Of JournalEntry)
     'Private listTransactions As List(Of TransactionEntry)
     'Private listCharIndustryJobs As List(Of IndustryJob)
@@ -75,6 +75,16 @@ Public Class frmMain
     Private Const sNameFilename As String = "invNames.txt"
     Private Const sCategoryFilename As String = "invCategories.txt"
     Private Const sFlagFilename As String = "invFlags.txt"
+
+    Private Enum OrderState As Integer
+        'Valid states: 0 = open/active, 1 = closed, 2 = expired (or fulfilled), 3 = cancelled, 4 = pending, 5 = character deleted
+        Open = 0
+        Closed = 1
+        Expired = 2
+        Cancelled = 3
+        Pending = 4
+        CharDeleted = 5
+    End Enum
 
     Private Async Sub frmMain_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
 
@@ -164,27 +174,22 @@ Public Class frmMain
 
         fLoadAssets()
 
-        'Try
+        Try
 
-        '    frm.lblText.Text = "Loading Market Orders..."
-        '    Application.DoEvents()
-        '    listOrders = api.GetCharacterMarketOrders()
-        '    isApiOk("GetCharacterMarketOrders", api.LastErrors)
-        '    Me.tsslOrders.Text = "Cached Until: " & api.LastQueryCachedUntil.ToLongDateString & " " & _
-        '                                    api.LastQueryCachedUntil.ToLongTimeString
+            UpdateStatus(frm, "Loading Market Orders...")
+            listOrders = Await character.GetMarketOrdersAsync()
+            Me.tsslOrders.Text = "Cached Until: " & listOrders.CachedUntilAsString
 
-        '    If apiCorp IsNot Nothing Then
-        '        listCorpOrders = apiCorp.GetCorporationMarketOrders()
-        '        isApiOk("GetCorporationMarketOrders", api.LastErrors)
-        '        listOrders.AddRange(listCorpOrders)
-        '    End If
+            If corporation IsNot Nothing Then
+                listCorpOrders = Await corporation.GetMarketOrdersAsync()
+            End If
 
-        '    fLoadMarketOrders()
-        '    cbActiveOrdersOnly.Checked = False
-        '    cbActiveOrdersOnly.Checked = True
-        'Catch ex As Exception
-        '    sListOfErrors += "Failed to get Market Order data" + vbLf
-        'End Try
+            fLoadMarketOrders()
+            cbActiveOrdersOnly.Checked = False
+            cbActiveOrdersOnly.Checked = True
+        Catch ex As Exception
+            sListOfErrors += "Failed to get Market Order data" + vbLf
+        End Try
 
         'Try
         '    frm.lblText.Text = "Loading Wallet Journal..."
@@ -630,154 +635,188 @@ Public Class frmMain
 
     End Sub
 
-    'Private Sub fLoadMarketOrders()
+    Private Sub fLoadMarketOrders()
 
-    '    Dim objOrder As MarketOrder
-    '    Dim drOrder As DataRow
-    '    Dim iOpenOrders As Integer
+        Dim objOrder As Models.Character.MarketOrders.MarketOrder
+        Dim drOrder As DataRow
+        Dim iOpenOrders As Integer
+        Dim dEscrow, dSellOrdersTotal, dBuyOrdersTotal As Double
 
-    '    Dim StringType As System.Type = Type.GetType("System.String")
-    '    Dim LongType As System.Type = Type.GetType("System.Int64")
-    '    Dim IntegerType As System.Type = Type.GetType("System.Int32")
-    '    Dim DateType As System.Type = Type.GetType("System.DateTime")
-    '    Dim DoubleType As System.Type = Type.GetType("System.Double")
+        Dim StringType As System.Type = Type.GetType("System.String")
+        Dim LongType As System.Type = Type.GetType("System.Int64")
+        Dim IntegerType As System.Type = Type.GetType("System.Int32")
+        Dim DateType As System.Type = Type.GetType("System.DateTime")
+        Dim DoubleType As System.Type = Type.GetType("System.Double")
 
-    '    Try
+        Try
 
-    '        dsOrdersBuy = New DataSet
-    '        dsOrdersSell = New DataSet
-    '        dtOrdersBuy = New DataTable
-    '        dtOrdersSell = New DataTable
+            dsOrdersBuy = New DataSet
+            dsOrdersSell = New DataSet
+            dtOrdersBuy = New DataTable
+            dtOrdersSell = New DataTable
 
-    '        dtOrdersBuy.Columns.Add("ItemName", StringType)
-    '        dtOrdersBuy.Columns.Add("State", StringType)
-    '        dtOrdersBuy.Columns.Add("Volume", StringType)
-    '        dtOrdersBuy.Columns.Add("Price", DoubleType)
-    '        dtOrdersBuy.Columns.Add("Station", StringType)
-    '        dtOrdersBuy.Columns.Add("Range", IntegerType)
-    '        dtOrdersBuy.Columns.Add("MinSellVolume", StringType)
-    '        dtOrdersBuy.Columns.Add("Expires", DateType)
-    '        dtOrdersBuy.Columns.Add("Issued", DateType)
-    '        dtOrdersBuy.Columns.Add("System", StringType)
+            dtOrdersBuy.Columns.Add("ItemName", StringType)
+            dtOrdersBuy.Columns.Add("State", StringType)
+            dtOrdersBuy.Columns.Add("Volume", StringType)
+            dtOrdersBuy.Columns.Add("Price", DoubleType)
+            dtOrdersBuy.Columns.Add("Station", StringType)
+            dtOrdersBuy.Columns.Add("Range", StringType)
+            dtOrdersBuy.Columns.Add("MinSellVolume", StringType)
+            dtOrdersBuy.Columns.Add("Expires", DateType)
+            dtOrdersBuy.Columns.Add("Issued", DateType)
+            dtOrdersBuy.Columns.Add("System", StringType)
 
-    '        dtOrdersSell.Columns.Add("ItemName", StringType)
-    '        dtOrdersSell.Columns.Add("State", StringType)
-    '        dtOrdersSell.Columns.Add("Volume", StringType)
-    '        dtOrdersSell.Columns.Add("Price", DoubleType)
-    '        dtOrdersSell.Columns.Add("Station", StringType)
-    '        dtOrdersSell.Columns.Add("Expires", DateType)
-    '        dtOrdersSell.Columns.Add("Issued", DateType)
-    '        dtOrdersSell.Columns.Add("System", StringType)
+            dtOrdersSell.Columns.Add("ItemName", StringType)
+            dtOrdersSell.Columns.Add("State", StringType)
+            dtOrdersSell.Columns.Add("Volume", StringType)
+            dtOrdersSell.Columns.Add("Price", DoubleType)
+            dtOrdersSell.Columns.Add("Station", StringType)
+            dtOrdersSell.Columns.Add("Expires", DateType)
+            dtOrdersSell.Columns.Add("Issued", DateType)
+            dtOrdersSell.Columns.Add("System", StringType)
 
-    '        dtOrdersBuy.TableName = "OrdersBuy"
-    '        dtOrdersSell.TableName = "OrdersSell"
+            dtOrdersBuy.TableName = "OrdersBuy"
+            dtOrdersSell.TableName = "OrdersSell"
 
-    '        For Each objOrder In listOrders
+            For Each objOrder In listOrders.Result.Orders
 
-    '            If objOrder.OrderType = TransactionType.Buy Then
-    '                drOrder = dtOrdersBuy.NewRow
-    '                If objOrder.Range = 0 Then
-    '                    drOrder("Range") = 0
-    '                ElseIf objOrder.Range = 32767 Then
-    '                    drOrder("Range") = 32767
-    '                ElseIf objOrder.Range = 65535 Then
-    '                    drOrder("Range") = 65535
-    '                Else
-    '                    drOrder("Range") = objOrder.Range.ToString
-    '                End If
-    '                drOrder("MinSellVolume") = objOrder.MinimumSellVolume.ToString
-    '            Else
-    '                drOrder = dtOrdersSell.NewRow
-    '            End If
+                If objOrder.Bid = 1 Then
+                    drOrder = dtOrdersBuy.NewRow
+                    If objOrder.Range = 0 Then
+                        drOrder("Range") = "System"
+                    ElseIf objOrder.Range = 32767 Then
+                        drOrder("Range") = "Region"
+                    ElseIf objOrder.Range = -1 Then
+                        drOrder("Range") = "Station"
+                    Else
+                        drOrder("Range") = objOrder.Range.ToString & " Jumps"
+                    End If
+                    drOrder("MinSellVolume") = objOrder.MinVolume.ToString
+                Else
+                    drOrder = dtOrdersSell.NewRow
+                End If
 
-    '            If objOrder.Type Is Nothing Then
-    '                drOrder("ItemName") = "Unknown"
-    '            Else
-    '                drOrder("ItemName") = objOrder.Type.Name
-    '            End If
+                If objOrder.TypeId = 0 Then
+                    drOrder("ItemName") = "Unknown"
+                Else
+                    drOrder("ItemName") = EVEItem.Find(objOrder.TypeId).TypeName
+                End If
 
-    '            drOrder("Expires") = objOrder.ExpiresLocalTime
+                drOrder("Expires") = objOrder.IssuedDate.ToLocalTime.AddDays(CDbl(objOrder.Duration))
 
-    '            drOrder("Issued") = objOrder.IssuedLocalTime
-    '            drOrder("State") = objOrder.OrderState.ToString
-    '            drOrder("Price") = CDbl(objOrder.Price)
-    '            drOrder("Station") = objOrder.Station.Name
-    '            drOrder("System") = objOrder.Station.SolarSystem.Name
-    '            drOrder("Volume") = objOrder.VolumeRemaining.ToString & " / " & objOrder.VolumeEntered.ToString
+                drOrder("Issued") = objOrder.IssuedDate.ToLocalTime.ToShortDateString & " " & objOrder.IssuedDate.ToLocalTime.ToShortTimeString
+                drOrder("State") = GetOrderStateString(CType(objOrder.OrderState, OrderState))
+                drOrder("Price") = CDbl(objOrder.Price)
+                drOrder("Station") = dicNames(objOrder.StationId).ItemName
+                drOrder("System") = Split(dicNames(objOrder.StationId).ItemName, " ")(0)
+                drOrder("Volume") = objOrder.VolumeRemaining.ToString & " / " & objOrder.VolumeEntered.ToString
 
-    '            If objOrder.OrderType = TransactionType.Buy Then
-    '                dtOrdersBuy.Rows.Add(drOrder)
-    '            Else
-    '                dtOrdersSell.Rows.Add(drOrder)
-    '            End If
+                If objOrder.Bid = 1 Then
+                    dtOrdersBuy.Rows.Add(drOrder)
+                Else
+                    dtOrdersSell.Rows.Add(drOrder)
+                End If
 
-    '            If objOrder.OrderState.ToString.Equals("Active") Then
-    '                iOpenOrders += 1
-    '            End If
-    '        Next
+                If objOrder.OrderState = OrderState.Open Then
+                    iOpenOrders += 1
+                End If
 
-    '        dsOrdersBuy.Tables.Add(dtOrdersBuy)
-    '        dsOrdersSell.Tables.Add(dtOrdersSell)
+                dEscrow += objOrder.Escrow
 
-    '        bsOrdersSell = New BindingSource
-    '        bsOrdersBuy = New BindingSource
+                If objOrder.Bid = 1 Then
+                    dBuyOrdersTotal += objOrder.Price * objOrder.VolumeRemaining
+                Else
+                    dSellOrdersTotal += objOrder.Price * objOrder.VolumeRemaining
+                End If
+            Next
 
-    '        bsOrdersSell.DataSource = dsOrdersSell
-    '        bsOrdersSell.DataMember = dsOrdersSell.Tables(0).TableName
-    '        bsOrdersBuy.DataSource = dsOrdersBuy
-    '        bsOrdersBuy.DataMember = dsOrdersBuy.Tables(0).TableName
+            dsOrdersBuy.Tables.Add(dtOrdersBuy)
+            dsOrdersSell.Tables.Add(dtOrdersSell)
 
-    '        dgvOrdersBuy.DataSource = bsOrdersBuy
-    '        dgvOrdersSell.DataSource = bsOrdersSell
+            bsOrdersSell = New BindingSource
+            bsOrdersBuy = New BindingSource
 
-    '        dgvOrdersBuy.Columns("ItemName").HeaderText = "Item"
-    '        dgvOrdersBuy.Columns("Volume").HeaderText = "Quantity"
-    '        dgvOrdersBuy.Columns("MinSellVolume").HeaderText = "Min Volume"
-    '        dgvOrdersSell.Columns("ItemName").HeaderText = "Item"
-    '        dgvOrdersSell.Columns("Volume").HeaderText = "Quantity"
+            bsOrdersSell.DataSource = dsOrdersSell
+            bsOrdersSell.DataMember = dsOrdersSell.Tables(0).TableName
+            bsOrdersBuy.DataSource = dsOrdersBuy
+            bsOrdersBuy.DataMember = dsOrdersBuy.Tables(0).TableName
 
-    '        dgvOrdersBuy.Columns("ItemName").FillWeight = 120
-    '        dgvOrdersBuy.Columns("State").FillWeight = 40
-    '        dgvOrdersBuy.Columns("Volume").FillWeight = 35
-    '        dgvOrdersBuy.Columns("Price").FillWeight = 60
-    '        dgvOrdersBuy.Columns("MinSellVolume").FillWeight = 50
-    '        dgvOrdersBuy.Columns("Range").FillWeight = 35
-    '        dgvOrdersBuy.Columns("Expires").FillWeight = 90
-    '        dgvOrdersBuy.Columns("Station").FillWeight = 100
-    '        dgvOrdersBuy.Columns("Issued").FillWeight = 75
-    '        dgvOrdersBuy.Columns("System").FillWeight = 40
+            dgvOrdersBuy.DataSource = bsOrdersBuy
+            dgvOrdersSell.DataSource = bsOrdersSell
 
-    '        dgvOrdersSell.Columns("ItemName").FillWeight = 120
-    '        dgvOrdersSell.Columns("State").FillWeight = 40
-    '        dgvOrdersSell.Columns("Volume").FillWeight = 35
-    '        dgvOrdersSell.Columns("Price").FillWeight = 60
-    '        dgvOrdersSell.Columns("Station").FillWeight = 100
-    '        dgvOrdersSell.Columns("Expires").FillWeight = 75
-    '        dgvOrdersSell.Columns("Issued").FillWeight = 75
-    '        dgvOrdersSell.Columns("System").FillWeight = 40
+            dgvOrdersBuy.Columns("ItemName").HeaderText = "Item"
+            dgvOrdersBuy.Columns("Volume").HeaderText = "Quantity"
+            dgvOrdersBuy.Columns("MinSellVolume").HeaderText = "Min Volume"
+            dgvOrdersSell.Columns("ItemName").HeaderText = "Item"
+            dgvOrdersSell.Columns("Volume").HeaderText = "Quantity"
 
-    '        dgvOrdersBuy.Visible = True
-    '        dgvOrdersSell.Visible = True
+            dgvOrdersBuy.Columns("ItemName").FillWeight = 120
+            dgvOrdersBuy.Columns("State").FillWeight = 40
+            dgvOrdersBuy.Columns("Volume").FillWeight = 35
+            dgvOrdersBuy.Columns("Price").FillWeight = 60
+            dgvOrdersBuy.Columns("MinSellVolume").FillWeight = 50
+            dgvOrdersBuy.Columns("Range").FillWeight = 35
+            dgvOrdersBuy.Columns("Expires").FillWeight = 90
+            dgvOrdersBuy.Columns("Station").FillWeight = 100
+            dgvOrdersBuy.Columns("Issued").FillWeight = 75
+            dgvOrdersBuy.Columns("System").FillWeight = 40
 
-    '        dgvOrdersBuy.Columns("Price").DefaultCellStyle.Format = "#,#.00 ISK"
-    '        dgvOrdersSell.Columns("Price").DefaultCellStyle.Format = "#,#.00 ISK"
+            dgvOrdersSell.Columns("ItemName").FillWeight = 120
+            dgvOrdersSell.Columns("State").FillWeight = 40
+            dgvOrdersSell.Columns("Volume").FillWeight = 35
+            dgvOrdersSell.Columns("Price").FillWeight = 60
+            dgvOrdersSell.Columns("Station").FillWeight = 100
+            dgvOrdersSell.Columns("Expires").FillWeight = 75
+            dgvOrdersSell.Columns("Issued").FillWeight = 75
+            dgvOrdersSell.Columns("System").FillWeight = 40
 
-    '        dgvOrdersBuy.Sort(dgvOrdersBuy.Columns("Issued"), System.ComponentModel.ListSortDirection.Descending)
-    '        dgvOrdersSell.Sort(dgvOrdersSell.Columns("Issued"), System.ComponentModel.ListSortDirection.Descending)
+            dgvOrdersBuy.Visible = True
+            dgvOrdersSell.Visible = True
 
-    '        dgvOrdersBuy.Columns("Volume").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
-    '        dgvOrdersSell.Columns("Volume").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+            dgvOrdersBuy.Columns("Price").DefaultCellStyle.Format = "#,#.00 ISK"
+            dgvOrdersSell.Columns("Price").DefaultCellStyle.Format = "#,#.00 ISK"
 
-    '        dgvOrdersBuy.Columns("Price").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
-    '        dgvOrdersSell.Columns("Price").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+            dgvOrdersBuy.Sort(dgvOrdersBuy.Columns("Issued"), System.ComponentModel.ListSortDirection.Descending)
+            dgvOrdersSell.Sort(dgvOrdersSell.Columns("Issued"), System.ComponentModel.ListSortDirection.Descending)
 
-    '        lblNumOrders.Text = "Total of " & iOpenOrders & " orders outstanding"
+            dgvOrdersBuy.Columns("Volume").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+            dgvOrdersSell.Columns("Volume").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
 
-    '    Catch ex As Exception
-    '        MessageBox.Show(ex.Message)
-    '    End Try
+            dgvOrdersBuy.Columns("Price").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+            dgvOrdersSell.Columns("Price").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
 
-    'End Sub
+            lblNumOrders.Text = "Total of " & iOpenOrders & " orders outstanding"
+            lblNumOrders.Text += ", Total in Escrow: " & dEscrow.ToString("N2") & " ISK"
+
+            lblSellOrdersTitle.Text = "Sell Orders Total: " & dSellOrdersTotal.ToString("N2") & " ISK"
+            lblBuyOrdersTitle.Text = "Buy Orders Total: " & dBuyOrdersTotal.ToString("N2") & " ISK"
+
+        Catch ex As Exception
+            MessageBox.Show(ex.Message)
+        End Try
+
+    End Sub
+
+    Private Function GetOrderStateString(argOrderState As OrderState) As String
+
+        Select Case argOrderState
+            Case OrderState.Open
+                Return "Open"
+            Case OrderState.Closed
+                Return "Closed"
+            Case OrderState.Expired
+                Return "Expired"
+            Case OrderState.Cancelled
+                Return "Cancelled"
+            Case OrderState.Pending
+                Return "Pending"
+            Case OrderState.CharDeleted
+                Return "Character Deleted"
+            Case Else
+                Return "Unknown"
+        End Select
+
+    End Function
 
     'Private Sub fLoadJournal()
 
@@ -1255,67 +1294,67 @@ Public Class frmMain
         fUpdateSkillTimes(objSkillsInQueue)
     End Sub
 
-    'Private Sub dgvOrdersBuy_CellFormatting(ByVal sender As Object, ByVal e As System.Windows.Forms.DataGridViewCellFormattingEventArgs) Handles dgvOrdersBuy.CellFormatting
+    Private Sub dgvOrdersBuy_CellFormatting(ByVal sender As Object, ByVal e As System.Windows.Forms.DataGridViewCellFormattingEventArgs) Handles dgvOrdersBuy.CellFormatting
 
-    '    If e.RowIndex < 0 Then
-    '        Exit Sub
-    '    End If
+        If e.RowIndex < 0 Then
+            Exit Sub
+        End If
 
-    '    If dgvOrdersBuy.Rows(e.RowIndex).Cells("State").Value.ToString = "Expired" Or _
-    '        dgvOrdersBuy.Rows(e.RowIndex).Cells("State").Value.ToString = "Closed" Then
-    '        e.CellStyle.ForeColor = Color.Gray
-    '    ElseIf dgvOrdersBuy.Rows(e.RowIndex).Cells("State").Value.ToString = "Cancelled" Or _
-    '        dgvOrdersBuy.Rows(e.RowIndex).Cells("State").Value.ToString = "CharacterDeleted" Then
-    '        e.CellStyle.ForeColor = Color.Red
-    '    End If
+        If dgvOrdersBuy.Rows(e.RowIndex).Cells("State").Value.ToString = GetOrderStateString(OrderState.Expired) Or _
+            dgvOrdersBuy.Rows(e.RowIndex).Cells("State").Value.ToString = GetOrderStateString(OrderState.Closed) Then
+            e.CellStyle.ForeColor = Color.Gray
+        ElseIf dgvOrdersBuy.Rows(e.RowIndex).Cells("State").Value.ToString = GetOrderStateString(OrderState.Cancelled) Or _
+            dgvOrdersBuy.Rows(e.RowIndex).Cells("State").Value.ToString = GetOrderStateString(OrderState.CharDeleted) Then
+            e.CellStyle.ForeColor = Color.Red
+        End If
 
-    '    If dgvOrdersBuy.Columns(e.ColumnIndex).Name = "Issued" Then
-    '        e.Value = fGetTimeString(Now() - CDate(e.Value))
-    '    ElseIf dgvOrdersBuy.Columns(e.ColumnIndex).Name = "Expires" Then
-    '        If (dgvOrdersBuy.Rows(e.RowIndex).Cells("State").Value.ToString = MarketOrder.MarketOrderState.Active.ToString Or _
-    '            dgvOrdersBuy.Rows(e.RowIndex).Cells("State").Value.ToString = MarketOrder.MarketOrderState.Pending.ToString) Then
-    '            e.Value = fGetTimeString(CDate(e.Value) - Now())
-    '        Else
-    '            e.Value = "-"
-    '        End If
-    '    ElseIf dgvOrdersBuy.Columns(e.ColumnIndex).Name = "Range" Then
-    '        If CInt(e.Value) = 0 Then
-    '            e.Value = "Solar System"
-    '        ElseIf CInt(e.Value) = 32767 Then
-    '            e.Value = "Station"
-    '        ElseIf CInt(e.Value) = 65535 Then
-    '            e.Value = "Region"
-    '        End If
-    '    End If
+        If dgvOrdersBuy.Columns(e.ColumnIndex).Name = "Issued" Then
+            e.Value = fGetTimeString(Now() - CDate(e.Value))
+        ElseIf dgvOrdersBuy.Columns(e.ColumnIndex).Name = "Expires" Then
+            If (dgvOrdersBuy.Rows(e.RowIndex).Cells("State").Value.ToString = GetOrderStateString(OrderState.Open) Or _
+                dgvOrdersBuy.Rows(e.RowIndex).Cells("State").Value.ToString = GetOrderStateString(OrderState.Pending)) Then
+                e.Value = fGetTimeString(CDate(e.Value) - Now())
+            Else
+                e.Value = "-"
+            End If
+            'ElseIf dgvOrdersBuy.Columns(e.ColumnIndex).Name = "Range" Then
+            '    If CInt(e.Value) = 0 Then
+            '        e.Value = "System"
+            '    ElseIf CInt(e.Value) = 32767 Then
+            '        e.Value = "Station"
+            '    ElseIf CInt(e.Value) = 65535 Then
+            '        e.Value = "Region"
+            '    End If
+        End If
 
-    'End Sub
+    End Sub
 
-    'Private Sub dgvOrdersSell_CellFormatting(ByVal sender As Object, ByVal e As System.Windows.Forms.DataGridViewCellFormattingEventArgs) Handles dgvOrdersSell.CellFormatting
+    Private Sub dgvOrdersSell_CellFormatting(ByVal sender As Object, ByVal e As System.Windows.Forms.DataGridViewCellFormattingEventArgs) Handles dgvOrdersSell.CellFormatting
 
-    '    If e.RowIndex < 0 Then
-    '        Exit Sub
-    '    End If
+        If e.RowIndex < 0 Then
+            Exit Sub
+        End If
 
-    '    If dgvOrdersSell.Rows(e.RowIndex).Cells("State").Value.ToString = "Expired" Or _
-    '        dgvOrdersSell.Rows(e.RowIndex).Cells("State").Value.ToString = "Closed" Then
-    '        e.CellStyle.ForeColor = Color.Gray
-    '    ElseIf dgvOrdersSell.Rows(e.RowIndex).Cells("State").Value.ToString = "Cancelled" Or _
-    '        dgvOrdersSell.Rows(e.RowIndex).Cells("State").Value.ToString = "CharacterDeleted" Then
-    '        e.CellStyle.ForeColor = Color.Red
-    '    End If
+        If dgvOrdersSell.Rows(e.RowIndex).Cells("State").Value.ToString = GetOrderStateString(OrderState.Expired) Or _
+            dgvOrdersSell.Rows(e.RowIndex).Cells("State").Value.ToString = GetOrderStateString(OrderState.Closed) Then
+            e.CellStyle.ForeColor = Color.Gray
+        ElseIf dgvOrdersSell.Rows(e.RowIndex).Cells("State").Value.ToString = GetOrderStateString(OrderState.Cancelled) Or _
+            dgvOrdersSell.Rows(e.RowIndex).Cells("State").Value.ToString = GetOrderStateString(OrderState.CharDeleted) Then
+            e.CellStyle.ForeColor = Color.Red
+        End If
 
-    '    If dgvOrdersSell.Columns(e.ColumnIndex).Name = "Issued" Then
-    '        e.Value = fGetTimeString(Now() - CDate(e.Value))
-    '    ElseIf dgvOrdersSell.Columns(e.ColumnIndex).Name = "Expires" Then
-    '        If (dgvOrdersSell.Rows(e.RowIndex).Cells("State").Value.ToString = MarketOrder.MarketOrderState.Active.ToString Or _
-    '            dgvOrdersSell.Rows(e.RowIndex).Cells("State").Value.ToString = MarketOrder.MarketOrderState.Pending.ToString) Then
-    '            e.Value = fGetTimeString(CDate(e.Value) - Now())
-    '        Else
-    '            e.Value = "-"
-    '        End If
-    '    End If
+        If dgvOrdersSell.Columns(e.ColumnIndex).Name = "Issued" Then
+            e.Value = fGetTimeString(Now() - CDate(e.Value))
+        ElseIf dgvOrdersSell.Columns(e.ColumnIndex).Name = "Expires" Then
+            If (dgvOrdersSell.Rows(e.RowIndex).Cells("State").Value.ToString = GetOrderStateString(OrderState.Open) Or _
+                dgvOrdersSell.Rows(e.RowIndex).Cells("State").Value.ToString = GetOrderStateString(OrderState.Pending)) Then
+                e.Value = fGetTimeString(CDate(e.Value) - Now())
+            Else
+                e.Value = "-"
+            End If
+        End If
 
-    'End Sub
+    End Sub
 
     'Private Sub dgvIndustry_CellFormatting(ByVal sender As Object, ByVal e As System.Windows.Forms.DataGridViewCellFormattingEventArgs) Handles dgvIndustry.CellFormatting
 
@@ -1347,8 +1386,8 @@ Public Class frmMain
 
         If bsOrdersBuy IsNot Nothing And bsOrdersSell IsNot Nothing Then
             If cbActiveOrdersOnly.Checked = True Then
-                bsOrdersSell.Filter = "State = 'Active'"
-                bsOrdersBuy.Filter = "State = 'Active'"
+                bsOrdersSell.Filter = "State = 'Open'"
+                bsOrdersBuy.Filter = "State = 'Open'"
             Else
                 bsOrdersSell.Filter = ""
                 bsOrdersBuy.Filter = ""

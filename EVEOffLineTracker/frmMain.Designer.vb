@@ -40,6 +40,8 @@ Partial Class frmMain
         Me.AboutToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
         Me.TabControl1 = New System.Windows.Forms.TabControl()
         Me.tabCharSheet = New System.Windows.Forms.TabPage()
+        Me.imgAlliance = New System.Windows.Forms.PictureBox()
+        Me.imgCorp = New System.Windows.Forms.PictureBox()
         Me.picImage = New System.Windows.Forms.PictureBox()
         Me.ssCharSheet = New System.Windows.Forms.StatusStrip()
         Me.tsslCharSheet = New System.Windows.Forms.ToolStripStatusLabel()
@@ -100,9 +102,9 @@ Partial Class frmMain
         Me.tsslOrders = New System.Windows.Forms.ToolStripStatusLabel()
         Me.ToolStripStatusLabel5 = New System.Windows.Forms.ToolStripStatusLabel()
         Me.SplitContainer1 = New System.Windows.Forms.SplitContainer()
-        Me.Label19 = New System.Windows.Forms.Label()
+        Me.lblSellOrdersTitle = New System.Windows.Forms.Label()
         Me.dgvOrdersSell = New System.Windows.Forms.DataGridView()
-        Me.Label20 = New System.Windows.Forms.Label()
+        Me.lblBuyOrdersTitle = New System.Windows.Forms.Label()
         Me.dgvOrdersBuy = New System.Windows.Forms.DataGridView()
         Me.tabTransactions = New System.Windows.Forms.TabPage()
         Me.ssTransactions = New System.Windows.Forms.StatusStrip()
@@ -122,11 +124,11 @@ Partial Class frmMain
         Me.dgvNotifications = New System.Windows.Forms.DataGridView()
         Me.btnRefresh = New System.Windows.Forms.Button()
         Me.Timer1 = New System.Windows.Forms.Timer(Me.components)
-        Me.imgCorp = New System.Windows.Forms.PictureBox()
-        Me.imgAlliance = New System.Windows.Forms.PictureBox()
         Me.MenuStrip1.SuspendLayout()
         Me.TabControl1.SuspendLayout()
         Me.tabCharSheet.SuspendLayout()
+        CType(Me.imgAlliance, System.ComponentModel.ISupportInitialize).BeginInit()
+        CType(Me.imgCorp, System.ComponentModel.ISupportInitialize).BeginInit()
         CType(Me.picImage, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.ssCharSheet.SuspendLayout()
         Me.tabAssets.SuspendLayout()
@@ -152,8 +154,6 @@ Partial Class frmMain
         Me.tabNotifications.SuspendLayout()
         Me.ssNotifications.SuspendLayout()
         CType(Me.dgvNotifications, System.ComponentModel.ISupportInitialize).BeginInit()
-        CType(Me.imgCorp, System.ComponentModel.ISupportInitialize).BeginInit()
-        CType(Me.imgAlliance, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SuspendLayout()
         '
         'MenuStrip1
@@ -274,6 +274,22 @@ Partial Class frmMain
         Me.tabCharSheet.TabIndex = 0
         Me.tabCharSheet.Text = "Character Sheet"
         Me.tabCharSheet.UseVisualStyleBackColor = True
+        '
+        'imgAlliance
+        '
+        Me.imgAlliance.Location = New System.Drawing.Point(273, 285)
+        Me.imgAlliance.Name = "imgAlliance"
+        Me.imgAlliance.Size = New System.Drawing.Size(64, 64)
+        Me.imgAlliance.TabIndex = 43
+        Me.imgAlliance.TabStop = False
+        '
+        'imgCorp
+        '
+        Me.imgCorp.Location = New System.Drawing.Point(273, 215)
+        Me.imgCorp.Name = "imgCorp"
+        Me.imgCorp.Size = New System.Drawing.Size(64, 64)
+        Me.imgCorp.TabIndex = 42
+        Me.imgCorp.TabStop = False
         '
         'picImage
         '
@@ -876,26 +892,26 @@ Partial Class frmMain
         '
         'SplitContainer1.Panel1
         '
-        Me.SplitContainer1.Panel1.Controls.Add(Me.Label19)
+        Me.SplitContainer1.Panel1.Controls.Add(Me.lblSellOrdersTitle)
         Me.SplitContainer1.Panel1.Controls.Add(Me.dgvOrdersSell)
         '
         'SplitContainer1.Panel2
         '
-        Me.SplitContainer1.Panel2.Controls.Add(Me.Label20)
+        Me.SplitContainer1.Panel2.Controls.Add(Me.lblBuyOrdersTitle)
         Me.SplitContainer1.Panel2.Controls.Add(Me.dgvOrdersBuy)
         Me.SplitContainer1.Size = New System.Drawing.Size(811, 461)
         Me.SplitContainer1.SplitterDistance = 216
         Me.SplitContainer1.TabIndex = 3
         '
-        'Label19
+        'lblSellOrdersTitle
         '
-        Me.Label19.AutoSize = True
-        Me.Label19.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Label19.Location = New System.Drawing.Point(0, 1)
-        Me.Label19.Name = "Label19"
-        Me.Label19.Size = New System.Drawing.Size(86, 16)
-        Me.Label19.TabIndex = 4
-        Me.Label19.Text = "Sell Orders"
+        Me.lblSellOrdersTitle.AutoSize = True
+        Me.lblSellOrdersTitle.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblSellOrdersTitle.Location = New System.Drawing.Point(0, 1)
+        Me.lblSellOrdersTitle.Name = "lblSellOrdersTitle"
+        Me.lblSellOrdersTitle.Size = New System.Drawing.Size(86, 16)
+        Me.lblSellOrdersTitle.TabIndex = 4
+        Me.lblSellOrdersTitle.Text = "Sell Orders"
         '
         'dgvOrdersSell
         '
@@ -916,15 +932,15 @@ Partial Class frmMain
         Me.dgvOrdersSell.Size = New System.Drawing.Size(811, 199)
         Me.dgvOrdersSell.TabIndex = 3
         '
-        'Label20
+        'lblBuyOrdersTitle
         '
-        Me.Label20.AutoSize = True
-        Me.Label20.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Label20.Location = New System.Drawing.Point(5, 0)
-        Me.Label20.Name = "Label20"
-        Me.Label20.Size = New System.Drawing.Size(85, 16)
-        Me.Label20.TabIndex = 5
-        Me.Label20.Text = "Buy Orders"
+        Me.lblBuyOrdersTitle.AutoSize = True
+        Me.lblBuyOrdersTitle.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblBuyOrdersTitle.Location = New System.Drawing.Point(5, 0)
+        Me.lblBuyOrdersTitle.Name = "lblBuyOrdersTitle"
+        Me.lblBuyOrdersTitle.Size = New System.Drawing.Size(85, 16)
+        Me.lblBuyOrdersTitle.TabIndex = 5
+        Me.lblBuyOrdersTitle.Text = "Buy Orders"
         '
         'dgvOrdersBuy
         '
@@ -1123,22 +1139,6 @@ Partial Class frmMain
         '
         Me.Timer1.Interval = 1000
         '
-        'imgCorp
-        '
-        Me.imgCorp.Location = New System.Drawing.Point(273, 215)
-        Me.imgCorp.Name = "imgCorp"
-        Me.imgCorp.Size = New System.Drawing.Size(64, 64)
-        Me.imgCorp.TabIndex = 42
-        Me.imgCorp.TabStop = False
-        '
-        'imgAlliance
-        '
-        Me.imgAlliance.Location = New System.Drawing.Point(273, 285)
-        Me.imgAlliance.Name = "imgAlliance"
-        Me.imgAlliance.Size = New System.Drawing.Size(64, 64)
-        Me.imgAlliance.TabIndex = 43
-        Me.imgAlliance.TabStop = False
-        '
         'frmMain
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -1159,6 +1159,8 @@ Partial Class frmMain
         Me.TabControl1.ResumeLayout(False)
         Me.tabCharSheet.ResumeLayout(False)
         Me.tabCharSheet.PerformLayout()
+        CType(Me.imgAlliance, System.ComponentModel.ISupportInitialize).EndInit()
+        CType(Me.imgCorp, System.ComponentModel.ISupportInitialize).EndInit()
         CType(Me.picImage, System.ComponentModel.ISupportInitialize).EndInit()
         Me.ssCharSheet.ResumeLayout(False)
         Me.ssCharSheet.PerformLayout()
@@ -1199,8 +1201,6 @@ Partial Class frmMain
         Me.ssNotifications.ResumeLayout(False)
         Me.ssNotifications.PerformLayout()
         CType(Me.dgvNotifications, System.ComponentModel.ISupportInitialize).EndInit()
-        CType(Me.imgCorp, System.ComponentModel.ISupportInitialize).EndInit()
-        CType(Me.imgAlliance, System.ComponentModel.ISupportInitialize).EndInit()
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
@@ -1259,9 +1259,9 @@ Partial Class frmMain
     Friend WithEvents dgvAssets As System.Windows.Forms.DataGridView
     Friend WithEvents tabOrders As System.Windows.Forms.TabPage
     Friend WithEvents SplitContainer1 As System.Windows.Forms.SplitContainer
-    Friend WithEvents Label19 As System.Windows.Forms.Label
+    Friend WithEvents lblSellOrdersTitle As System.Windows.Forms.Label
     Friend WithEvents dgvOrdersSell As System.Windows.Forms.DataGridView
-    Friend WithEvents Label20 As System.Windows.Forms.Label
+    Friend WithEvents lblBuyOrdersTitle As System.Windows.Forms.Label
     Friend WithEvents dgvOrdersBuy As System.Windows.Forms.DataGridView
     Friend WithEvents ssCharSheet As System.Windows.Forms.StatusStrip
     Friend WithEvents tsslCharSheet As System.Windows.Forms.ToolStripStatusLabel
