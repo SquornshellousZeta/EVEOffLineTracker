@@ -22,6 +22,7 @@ Public Class frmMain
     Private objEve As eZet.EveLib.Modules.Eve
     Private objSkillTree As Models.EveApiResponse(Of Models.Misc.SkillTree)
     Private objTypeNames As Models.EveApiResponse(Of Models.Misc.TypeName)
+    Private objRefTypes As Models.EveApiResponse(Of Models.Misc.ReferenceTypes)
 
     Private dicAllAssets As New Dictionary(Of Long, Asset)
     Private dicSkills As New Dictionary(Of Integer, Models.Misc.SkillTree.Skill)
@@ -35,7 +36,7 @@ Public Class frmMain
     Private listCorpAssets As Models.EveApiResponse(Of Models.Character.AssetList)
     Private listOrders As Models.EveApiResponse(Of Models.Character.MarketOrders)
     Private listCorpOrders As Models.EveApiResponse(Of Models.Character.MarketOrders)
-    'Private listJournal As List(Of JournalEntry)
+    Private listJournal As Models.EveApiResponse(Of Models.Character.WalletJournal)
     'Private listTransactions As List(Of TransactionEntry)
     'Private listCharIndustryJobs As List(Of IndustryJob)
     'Private listCorpIndustryJobs As List(Of IndustryJob)
@@ -113,6 +114,7 @@ Public Class frmMain
 
         objEve = New eZet.EveLib.Modules.Eve()
         objSkillTree = objEve.GetSkillTree()
+        objRefTypes = objEve.GetReferenceTypes()
 
         MakeSkillMap()
 
@@ -191,18 +193,15 @@ Public Class frmMain
             sListOfErrors += "Failed to get Market Order data" + vbLf
         End Try
 
-        'Try
-        '    frm.lblText.Text = "Loading Wallet Journal..."
-        '    Application.DoEvents()
-        '    listJournal = api.GetCharacterWalletJournal
-        '    isApiOk("GetCharacterWalletJournal", api.LastErrors)
-        '    Me.tsslJournal.Text = "Cached Until: " & api.LastQueryCachedUntil.ToLongDateString & " " & _
-        '                                    api.LastQueryCachedUntil.ToLongTimeString
+        Try
+            UpdateStatus(frm, "Loading Wallet Journal...")
+            listJournal = Await character.GetWalletJournalAsync(2560)
+            Me.tsslJournal.Text = "Cached Until: " & listJournal.CachedUntilAsString
 
-        '    fLoadJournal()
-        'Catch ex As Exception
-        '    sListOfErrors += "Failed to get Wallet Journal data" + vbLf
-        'End Try
+            fLoadJournal()
+        Catch ex As Exception
+            sListOfErrors += "Failed to get Wallet Journal data" + vbLf
+        End Try
 
         'Try
 
@@ -818,112 +817,127 @@ Public Class frmMain
 
     End Function
 
-    'Private Sub fLoadJournal()
+    Private Sub fLoadJournal()
 
-    '    Dim objEntry As JournalEntry
-    '    Dim drEntry As DataRow
+        Dim objEntry As Models.Character.WalletJournal.JournalEntry
+        Dim drEntry As DataRow
+        Dim dTaxAmount As Double = 0
 
-    '    Dim StringType As System.Type = Type.GetType("System.String")
-    '    Dim DoubleType As System.Type = Type.GetType("System.Double")
-    '    Dim DateType As System.Type = Type.GetType("System.DateTime")
+        Dim StringType As System.Type = Type.GetType("System.String")
+        Dim DoubleType As System.Type = Type.GetType("System.Double")
+        Dim DateType As System.Type = Type.GetType("System.DateTime")
 
-    '    dsJournal = New DataSet
-    '    dtJournal = New DataTable
+        Try
 
-    '    dtJournal.Columns.Add("EntryTimeCol", DateType)
-    '    dtJournal.Columns.Add("TypeCol", StringType)
-    '    dtJournal.Columns.Add("AmountCol", DoubleType)
-    '    dtJournal.Columns.Add("BalanceCol", DoubleType)
-    '    dtJournal.Columns.Add("DescriptionCol", StringType)
+            dsJournal = New DataSet
+            dtJournal = New DataTable
 
-    '    dtJournal.TableName = "WalletJournal"
+            dtJournal.Columns.Add("EntryTimeCol", DateType)
+            dtJournal.Columns.Add("TypeCol", StringType)
+            dtJournal.Columns.Add("AmountCol", DoubleType)
+            dtJournal.Columns.Add("BalanceCol", DoubleType)
+            dtJournal.Columns.Add("DescriptionCol", StringType)
 
-    '    For Each objEntry In listJournal
+            dtJournal.TableName = "WalletJournal"
 
-    '        If (objEntry.TaxAmount > 0) Then
-    '            drEntry = dtJournal.NewRow
+            For Each objEntry In listJournal.Result.Journal
 
-    '            drEntry("EntryTimeCol") = objEntry.DateLocalTime
-    '            drEntry("TypeCol") = objEntry.TransferType.ToString
-    '            drEntry("AmountCol") = CDbl(-objEntry.TaxAmount)
-    '            drEntry("BalanceCol") = CDbl(objEntry.Balance - objEntry.TaxAmount)
-    '            drEntry("DescriptionCol") = String.Format("Corporation tax of {0} paid", _
-    '                FormatPercent((objEntry.TaxAmount / (objEntry.Amount + objEntry.TaxAmount)), 1))
-    '            dtJournal.Rows.Add(drEntry)
+                Double.TryParse(objEntry.TaxAmount, dTaxAmount)
 
-    '        End If
+                If (dTaxAmount > 0.0) Then
+                    drEntry = dtJournal.NewRow
 
-    '        drEntry = dtJournal.NewRow
+                    drEntry("EntryTimeCol") = objEntry.Date.ToLocalTime
+                    drEntry("TypeCol") = objRefTypes.Result.RefTypes(objEntry.RefTypeId).RefTypeName
+                    drEntry("AmountCol") = -dTaxAmount
+                    drEntry("BalanceCol") = objEntry.BalanceAfter - dTaxAmount
+                    drEntry("DescriptionCol") = String.Format("Corporation tax of {0} paid", _
+                        FormatPercent((dTaxAmount / (objEntry.Amount + dTaxAmount)), 1))
+                    dtJournal.Rows.Add(drEntry)
 
-    '        drEntry("EntryTimeCol") = objEntry.DateLocalTime
-    '        drEntry("TypeCol") = objEntry.TransferType.ToString
-    '        If (objEntry.TaxAmount > 0) Then
-    '            drEntry("AmountCol") = CDbl(objEntry.Amount + objEntry.TaxAmount)
-    '        Else
-    '            drEntry("AmountCol") = CDbl(objEntry.Amount)
-    '        End If
-    '        drEntry("BalanceCol") = CDbl(objEntry.Balance)
-    '        Select Case objEntry.TransferTypeID
-    '            Case 2
-    '                drEntry("DescriptionCol") = String.Format("Market: {0} bought stuff from {1}", _
-    '                                        objEntry.GivingPartyName, objEntry.ReceivingPartyName)
-    '            Case 16
-    '                drEntry("DescriptionCol") = String.Format("Bounty paid to {0}", _
-    '                                        objEntry.ReceivingPartyName)
-    '            Case 42
-    '                drEntry("DescriptionCol") = String.Format("{0} bought stuff on the market", _
-    '                                        objEntry.GivingPartyName)
-    '            Case 54
-    '                drEntry("DescriptionCol") = String.Format("Sales tax paid to {0}", _
-    '                                        objEntry.ReceivingPartyName)
-    '            Case Else
-    '                drEntry("DescriptionCol") = objEntry.TransferType.ToString
-    '        End Select
+                End If
 
-    '        dtJournal.Rows.Add(drEntry)
+                drEntry = dtJournal.NewRow
+
+                drEntry("EntryTimeCol") = objEntry.Date.ToLocalTime
+                drEntry("TypeCol") = objRefTypes.Result.RefTypes(objEntry.RefTypeId).RefTypeName
+                If (dTaxAmount > 0.0) Then
+                    drEntry("AmountCol") = objEntry.Amount + dTaxAmount
+                Else
+                    drEntry("AmountCol") = objEntry.Amount
+                End If
+                drEntry("BalanceCol") = objEntry.BalanceAfter
+                Select Case objEntry.RefTypeId
+                    Case 2
+                        drEntry("DescriptionCol") = String.Format("Market: {0} bought stuff from {1}", _
+                                                objEntry.OwnerName, objEntry.ParticipantName)
+                    Case 42
+                        drEntry("DescriptionCol") = String.Format("{0} bought stuff on the market", _
+                                                objEntry.OwnerName)
+                    Case 54
+                        drEntry("DescriptionCol") = String.Format("Sales tax paid to {0}", _
+                                                objEntry.ParticipantName)
+                    Case 85
+                        drEntry("DescriptionCol") = String.Format("Bounty paid to {0} for killing pirates in {1}", _
+                                                objEntry.ParticipantName, objEntry.ArgumentName)
+                    Case 96
+                        drEntry("DescriptionCol") = String.Format("Planetary Import Tax: {0} imported from {1} (paid to {2})", _
+                                                objEntry.OwnerName, objEntry.ArgumentName, objEntry.ParticipantName)
+                    Case 97
+                        drEntry("DescriptionCol") = String.Format("Planetary Export Tax: {0} exported from {1} (paid to {2})", _
+                                                objEntry.OwnerName, objEntry.ArgumentName, objEntry.ParticipantName)
+                    Case Else
+                        drEntry("DescriptionCol") = objRefTypes.Result.RefTypes(objEntry.RefTypeId).RefTypeName
+                End Select
+
+                dtJournal.Rows.Add(drEntry)
 
 
 
-    '    Next
+            Next
 
-    '    dsJournal.Tables.Add(dtJournal)
+            dsJournal.Tables.Add(dtJournal)
 
-    '    bsJournal = New BindingSource
+            bsJournal = New BindingSource
 
-    '    bsJournal.DataSource = dsJournal
-    '    bsJournal.DataMember = dsJournal.Tables(0).TableName
+            bsJournal.DataSource = dsJournal
+            bsJournal.DataMember = dsJournal.Tables(0).TableName
 
-    '    dgvJournal.DataSource = bsJournal
+            dgvJournal.DataSource = bsJournal
 
-    '    dgvJournal.Visible = True
+            dgvJournal.Visible = True
 
-    '    dgvJournal.Sort(dgvJournal.Columns("EntryTimeCol"), System.ComponentModel.ListSortDirection.Descending)
+            dgvJournal.Sort(dgvJournal.Columns("EntryTimeCol"), System.ComponentModel.ListSortDirection.Descending)
 
-    '    dgvJournal.Columns("AmountCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
-    '    dgvJournal.Columns("BalanceCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+            dgvJournal.Columns("AmountCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+            dgvJournal.Columns("BalanceCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
 
-    '    dgvJournal.Columns("EntryTimeCol").DefaultCellStyle.Format = "yyyy.MM.dd HH:mm"
-    '    dgvJournal.Columns("AmountCol").DefaultCellStyle.Format = "#,#.00 ISK"
-    '    dgvJournal.Columns("BalanceCol").DefaultCellStyle.Format = "#,#.00 ISK"
+            dgvJournal.Columns("EntryTimeCol").DefaultCellStyle.Format = "yyyy.MM.dd HH:mm"
+            dgvJournal.Columns("AmountCol").DefaultCellStyle.Format = "#,#.00 ISK"
+            dgvJournal.Columns("BalanceCol").DefaultCellStyle.Format = "#,#.00 ISK"
 
-    '    dgvJournal.Columns("EntryTimeCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvJournal.Columns("TypeCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvJournal.Columns("AmountCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvJournal.Columns("BalanceCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvJournal.Columns("DescriptionCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+            dgvJournal.Columns("EntryTimeCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvJournal.Columns("TypeCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvJournal.Columns("AmountCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvJournal.Columns("BalanceCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvJournal.Columns("DescriptionCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
 
-    '    dgvJournal.Columns("EntryTimeCol").Width = 100
-    '    dgvJournal.Columns("TypeCol").Width = 150
-    '    dgvJournal.Columns("AmountCol").Width = 105
-    '    dgvJournal.Columns("BalanceCol").Width = 110
+            dgvJournal.Columns("EntryTimeCol").Width = 100
+            dgvJournal.Columns("TypeCol").Width = 150
+            dgvJournal.Columns("AmountCol").Width = 105
+            dgvJournal.Columns("BalanceCol").Width = 125
 
-    '    dgvJournal.Columns("EntryTimeCol").HeaderText = "Date"
-    '    dgvJournal.Columns("TypeCol").HeaderText = "Type"
-    '    dgvJournal.Columns("AmountCol").HeaderText = "Amount"
-    '    dgvJournal.Columns("BalanceCol").HeaderText = "Balance"
-    '    dgvJournal.Columns("DescriptionCol").HeaderText = "Description"
+            dgvJournal.Columns("EntryTimeCol").HeaderText = "Date"
+            dgvJournal.Columns("TypeCol").HeaderText = "Type"
+            dgvJournal.Columns("AmountCol").HeaderText = "Amount"
+            dgvJournal.Columns("BalanceCol").HeaderText = "Balance"
+            dgvJournal.Columns("DescriptionCol").HeaderText = "Description"
 
-    'End Sub
+        Catch ex As Exception
+            MessageBox.Show(ex.Message)
+        End Try
+
+    End Sub
 
     'Private Sub fLoadTransactions()
 
