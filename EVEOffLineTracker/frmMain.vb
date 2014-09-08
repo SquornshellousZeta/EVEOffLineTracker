@@ -37,7 +37,7 @@ Public Class frmMain
     Private listOrders As Models.EveApiResponse(Of Models.Character.MarketOrders)
     Private listCorpOrders As Models.EveApiResponse(Of Models.Character.MarketOrders)
     Private listJournal As Models.EveApiResponse(Of Models.Character.WalletJournal)
-    'Private listTransactions As List(Of TransactionEntry)
+    Private listTransactions As Models.EveApiResponse(Of Models.Character.WalletTransactions)
     'Private listCharIndustryJobs As List(Of IndustryJob)
     'Private listCorpIndustryJobs As List(Of IndustryJob)
     'Private listNotifications As List(Of Character.Notification)
@@ -112,9 +112,11 @@ Public Class frmMain
         frm.Show()
         UpdateStatus(frm, "Loading EVE Data...")
 
+        frm.BringToFront()
+
         objEve = New eZet.EveLib.Modules.Eve()
-        objSkillTree = objEve.GetSkillTree()
-        objRefTypes = objEve.GetReferenceTypes()
+        objSkillTree = Await objEve.GetSkillTreeAsync()
+        objRefTypes = Await objEve.GetReferenceTypesAsync()
 
         MakeSkillMap()
 
@@ -203,19 +205,15 @@ Public Class frmMain
             sListOfErrors += "Failed to get Wallet Journal data" + vbLf
         End Try
 
-        'Try
+        Try
+            UpdateStatus(frm, "Loading Wallet Transactions...")
+            listTransactions = Await character.GetWalletTransactionsAsync(2560)
+            Me.tsslTransactions.Text = "Cached Until: " & listTransactions.CachedUntilAsString
 
-        '    frm.lblText.Text = "Loading Wallet Transactions..."
-        '    Application.DoEvents()
-        '    listTransactions = api.GetCharacterWalletTransactions
-        '    isApiOk("GetCharacterWalletTransactions", api.LastErrors)
-        '    Me.tsslTransactions.Text = "Cached Until: " & api.LastQueryCachedUntil.ToLongDateString & " " & _
-        '                                    api.LastQueryCachedUntil.ToLongTimeString
-
-        '    fLoadTransactions()
-        'Catch ex As Exception
-        '    sListOfErrors += "Failed to get Wallet Transaction data" + vbLf
-        'End Try
+            fLoadTransactions()
+        Catch ex As Exception
+            sListOfErrors += "Failed to get Wallet Transaction data" + vbLf
+        End Try
 
         'Try
 
@@ -939,97 +937,93 @@ Public Class frmMain
 
     End Sub
 
-    'Private Sub fLoadTransactions()
+    Private Sub fLoadTransactions()
 
-    '    Dim objEntry As TransactionEntry
-    '    Dim drEntry As DataRow
+        Dim objEntry As Models.Character.WalletTransactions.Transaction
+        Dim drEntry As DataRow
 
-    '    Dim StringType As System.Type = Type.GetType("System.String")
-    '    Dim DoubleType As System.Type = Type.GetType("System.Double")
-    '    Dim DateType As System.Type = Type.GetType("System.DateTime")
-    '    Dim IntegerType As System.Type = Type.GetType("System.Int64")
+        Dim StringType As System.Type = Type.GetType("System.String")
+        Dim DoubleType As System.Type = Type.GetType("System.Double")
+        Dim DateType As System.Type = Type.GetType("System.DateTime")
+        Dim IntegerType As System.Type = Type.GetType("System.Int64")
 
-    '    dsTransactions = New DataSet
-    '    dtTransactions = New DataTable
+        dsTransactions = New DataSet
+        dtTransactions = New DataTable
 
-    '    dtTransactions.Columns.Add("EntryTimeCol", DateType)
-    '    dtTransactions.Columns.Add("TypeCol", StringType)
-    '    dtTransactions.Columns.Add("PriceCol", DoubleType)
-    '    dtTransactions.Columns.Add("QtyCol", IntegerType)
-    '    dtTransactions.Columns.Add("CreditCol", DoubleType)
-    '    dtTransactions.Columns.Add("ClientCol", StringType)
-    '    dtTransactions.Columns.Add("WhereCol", StringType)
+        dtTransactions.Columns.Add("EntryTimeCol", DateType)
+        dtTransactions.Columns.Add("TypeCol", StringType)
+        dtTransactions.Columns.Add("PriceCol", DoubleType)
+        dtTransactions.Columns.Add("QtyCol", IntegerType)
+        dtTransactions.Columns.Add("CreditCol", DoubleType)
+        dtTransactions.Columns.Add("ClientCol", StringType)
+        dtTransactions.Columns.Add("WhereCol", StringType)
 
-    '    dtTransactions.TableName = "WalletTransactions"
+        dtTransactions.TableName = "WalletTransactions"
 
-    '    For Each objEntry In listTransactions
-    '        drEntry = dtTransactions.NewRow
+        For Each objEntry In listTransactions.Result.Transactions
+            drEntry = dtTransactions.NewRow
 
-    '        If objEntry.TransactionType = TransactionType.Buy Then
-    '            drEntry("CreditCol") = CDbl(-objEntry.PriceTotal)
-    '        Else
-    '            drEntry("CreditCol") = CDbl(objEntry.PriceTotal)
-    '        End If
-    '        drEntry("EntryTimeCol") = objEntry.DateLocalTime
-    '        If objEntry.Type Is Nothing Then
-    '            drEntry("TypeCol") = "Unknown"
-    '        Else
-    '            drEntry("TypeCol") = objEntry.Type.Name
-    '        End If
-    '        drEntry("PriceCol") = CDbl(objEntry.Price)
-    '        drEntry("QtyCol") = CDbl(objEntry.Quantity)
-    '        drEntry("ClientCol") = objEntry.ClientName
-    '        drEntry("WhereCol") = objEntry.StationName
+            If objEntry.TransactionType = Models.OrderType.Buy Then
+                drEntry("CreditCol") = -objEntry.Price * objEntry.Quantity
+            Else
+                drEntry("CreditCol") = objEntry.Price
+            End If
+            drEntry("EntryTimeCol") = objEntry.TransactionDate
+            drEntry("TypeCol") = objEntry.TypeName
+            drEntry("PriceCol") = CDbl(objEntry.Price)
+            drEntry("QtyCol") = CDbl(objEntry.Quantity)
+            drEntry("ClientCol") = objEntry.ClientName
+            drEntry("WhereCol") = objEntry.StationName
 
-    '        dtTransactions.Rows.Add(drEntry)
+            dtTransactions.Rows.Add(drEntry)
 
-    '    Next
+        Next
 
-    '    dsTransactions.Tables.Add(dtTransactions)
+        dsTransactions.Tables.Add(dtTransactions)
 
-    '    bsTransactions = New BindingSource
+        bsTransactions = New BindingSource
 
-    '    bsTransactions.DataSource = dsTransactions
-    '    bsTransactions.DataMember = dsTransactions.Tables(0).TableName
+        bsTransactions.DataSource = dsTransactions
+        bsTransactions.DataMember = dsTransactions.Tables(0).TableName
 
-    '    dgvTransactions.DataSource = bsTransactions
+        dgvTransactions.DataSource = bsTransactions
 
-    '    dgvTransactions.Visible = True
+        dgvTransactions.Visible = True
 
-    '    dgvTransactions.Sort(dgvTransactions.Columns("EntryTimeCol"), System.ComponentModel.ListSortDirection.Descending)
+        dgvTransactions.Sort(dgvTransactions.Columns("EntryTimeCol"), System.ComponentModel.ListSortDirection.Descending)
 
-    '    dgvTransactions.Columns("PriceCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
-    '    dgvTransactions.Columns("QtyCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
-    '    dgvTransactions.Columns("CreditCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+        dgvTransactions.Columns("PriceCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+        dgvTransactions.Columns("QtyCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+        dgvTransactions.Columns("CreditCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
 
-    '    dgvTransactions.Columns("EntryTimeCol").DefaultCellStyle.Format = "yyyy.MM.dd HH:mm"
-    '    dgvTransactions.Columns("PriceCol").DefaultCellStyle.Format = "#,#.00 ISK"
-    '    dgvTransactions.Columns("CreditCol").DefaultCellStyle.Format = "#,#.00 ISK"
+        dgvTransactions.Columns("EntryTimeCol").DefaultCellStyle.Format = "yyyy.MM.dd HH:mm"
+        dgvTransactions.Columns("PriceCol").DefaultCellStyle.Format = "#,#.00 ISK"
+        dgvTransactions.Columns("CreditCol").DefaultCellStyle.Format = "#,#.00 ISK"
 
-    '    dgvTransactions.Columns("EntryTimeCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvTransactions.Columns("TypeCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvTransactions.Columns("PriceCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvTransactions.Columns("QtyCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvTransactions.Columns("CreditCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvTransactions.Columns("ClientCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvTransactions.Columns("WhereCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+        dgvTransactions.Columns("EntryTimeCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+        dgvTransactions.Columns("TypeCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+        dgvTransactions.Columns("PriceCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+        dgvTransactions.Columns("QtyCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+        dgvTransactions.Columns("CreditCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+        dgvTransactions.Columns("ClientCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+        dgvTransactions.Columns("WhereCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
 
-    '    dgvTransactions.Columns("EntryTimeCol").Width = 100
-    '    dgvTransactions.Columns("TypeCol").Width = 150
-    '    dgvTransactions.Columns("PriceCol").Width = 105
-    '    dgvTransactions.Columns("QtyCol").Width = 50
-    '    dgvTransactions.Columns("CreditCol").Width = 105
-    '    dgvTransactions.Columns("ClientCol").Width = 150
+        dgvTransactions.Columns("EntryTimeCol").Width = 100
+        dgvTransactions.Columns("TypeCol").Width = 150
+        dgvTransactions.Columns("PriceCol").Width = 105
+        dgvTransactions.Columns("QtyCol").Width = 50
+        dgvTransactions.Columns("CreditCol").Width = 105
+        dgvTransactions.Columns("ClientCol").Width = 150
 
-    '    dgvTransactions.Columns("EntryTimeCol").HeaderText = "When"
-    '    dgvTransactions.Columns("TypeCol").HeaderText = "Type"
-    '    dgvTransactions.Columns("PriceCol").HeaderText = "Price"
-    '    dgvTransactions.Columns("QtyCol").HeaderText = "Quantity"
-    '    dgvTransactions.Columns("CreditCol").HeaderText = "Credit"
-    '    dgvTransactions.Columns("ClientCol").HeaderText = "Client"
-    '    dgvTransactions.Columns("WhereCol").HeaderText = "Where"
+        dgvTransactions.Columns("EntryTimeCol").HeaderText = "When"
+        dgvTransactions.Columns("TypeCol").HeaderText = "Type"
+        dgvTransactions.Columns("PriceCol").HeaderText = "Price"
+        dgvTransactions.Columns("QtyCol").HeaderText = "Quantity"
+        dgvTransactions.Columns("CreditCol").HeaderText = "Credit"
+        dgvTransactions.Columns("ClientCol").HeaderText = "Client"
+        dgvTransactions.Columns("WhereCol").HeaderText = "Where"
 
-    'End Sub
+    End Sub
 
 
     'Private Sub fLoadIndustry()
@@ -1533,8 +1527,7 @@ Public Class frmMain
 
     Private Sub UpdateStatus(argForm As frmLoading, argMessage As String)
 
-        argForm.lblText.Text = argMessage
-        Application.DoEvents()
+        argForm.SetText(argMessage)
 
     End Sub
 

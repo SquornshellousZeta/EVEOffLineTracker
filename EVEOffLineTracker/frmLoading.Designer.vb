@@ -22,7 +22,7 @@ Partial Class frmLoading
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        Me.lblText = New System.Windows.Forms.Label
+        Me.lblText = New System.Windows.Forms.Label()
         Me.SuspendLayout()
         '
         'lblText
@@ -39,13 +39,11 @@ Partial Class frmLoading
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(504, 85)
-        Me.ControlBox = False
         Me.Controls.Add(Me.lblText)
         Me.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog
         Me.Name = "frmLoading"
         Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
         Me.Text = " "
-        Me.TopMost = True
         Me.ResumeLayout(False)
 
     End Sub
