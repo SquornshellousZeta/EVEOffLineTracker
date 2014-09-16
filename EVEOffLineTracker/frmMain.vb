@@ -1,5 +1,6 @@
 Imports eZet.EveLib.Modules
 Imports eZet.EveLib.Modules.EveOnlineApi
+Imports System.Threading.Tasks
 
 Public Class frmMain
 
@@ -38,8 +39,8 @@ Public Class frmMain
     Private listCorpOrders As Models.EveApiResponse(Of Models.Character.MarketOrders)
     Private listJournal As Models.EveApiResponse(Of Models.Character.WalletJournal)
     Private listTransactions As Models.EveApiResponse(Of Models.Character.WalletTransactions)
-    'Private listCharIndustryJobs As List(Of IndustryJob)
-    'Private listCorpIndustryJobs As List(Of IndustryJob)
+    Private listCharIndustryJobs As Models.EveApiResponse(Of Models.Character.IndustryJobs)
+    Private listCorpIndustryJobs As Models.EveApiResponse(Of Models.Character.IndustryJobs)
     'Private listNotifications As List(Of Character.Notification)
 
     Private dsAssets As DataSet
@@ -87,6 +88,27 @@ Public Class frmMain
         CharDeleted = 5
     End Enum
 
+    Private Enum ActivityID As Integer
+        Manufacturing = 1
+        Researching_Technology = 2
+        Researching_Time_Productivity = 3
+        Researching_Material_Productivity = 4
+        Copying = 5
+        Duplicating = 6
+        Reverse_Engineering = 7
+        Invention = 8
+    End Enum
+
+    Private Enum JobStatus As Integer
+        Active = 1
+        Paused = 2
+        Ready = 3
+        Cancelled = 102
+        Reverted = 103
+        Delivered = 104
+        Failed = 105
+    End Enum
+
     Private Async Sub frmMain_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
 
         Await fLoadEVEData()
@@ -118,17 +140,15 @@ Public Class frmMain
         objSkillTree = Await objEve.GetSkillTreeAsync()
         objRefTypes = Await objEve.GetReferenceTypesAsync()
 
-        MakeSkillMap()
+        frm.BringToFront()
+        Await MakeMapsAsync()
 
-        MakeItemMap()
-
-        MakeGroupMap()
-
-        MakeNameMap()
-
-        MakeCategoryMap()
-
-        MakeFlagMap()
+        'MakeSkillMap()
+        'MakeItemMap()
+        'MakeGroupMap()
+        'MakeNameMap()
+        'MakeCategoryMap()
+        'MakeFlagMap()
 
         UpdateStatus(frm, "Getting API information")
         character = New Character(iKeyID, svCode, lCharacterID)
@@ -141,12 +161,12 @@ Public Class frmMain
         Try
 
             UpdateStatus(frm, "Loading Character Sheet...")
-            charSheetResponse = character.GetCharacterSheet()
+            charSheetResponse = Await character.GetCharacterSheetAsync()
 
             Me.tsslCharSheet.Text = "Cached Until: " & charSheetResponse.CachedUntilAsString
 
-            Await fLoadCharacterSheet(charSheetResponse.Result)
-
+ '           Await fLoadCharacterSheet(charSheetResponse.Result)
+            Await Task.Run(Sub() fLoadCharacterSheet(charSheetResponse.Result))
 
         Catch ex As Exception
             sListOfErrors += "Failed to get Character Sheet data" + vbLf
@@ -156,7 +176,7 @@ Public Class frmMain
         Try
 
             UpdateStatus(frm, "Loading Character Assets...")
-            listAssets = character.GetAssetList()
+            listAssets = Await character.GetAssetListAsync()
             Me.tsslAssets.Text = "Cached Until: " & listAssets.CachedUntilAsString
 
         Catch ex As Exception
@@ -168,7 +188,7 @@ Public Class frmMain
             Try
 
                 UpdateStatus(frm, "Loading Corporation Assets...")
-                listCorpAssets = corporation.GetAssetList()
+                listCorpAssets = Await corporation.GetAssetListAsync()
                 Me.tsslAssets.Text = "Cached Until: " & listCorpAssets.CachedUntilAsString
 
             Catch ex As Exception
@@ -176,7 +196,7 @@ Public Class frmMain
             End Try
         End If
 
-        fLoadAssets()
+        Await fLoadAssets()
 
         Try
 
@@ -188,7 +208,7 @@ Public Class frmMain
                 listCorpOrders = Await corporation.GetMarketOrdersAsync()
             End If
 
-            fLoadMarketOrders()
+            Await fLoadMarketOrders()
             cbActiveOrdersOnly.Checked = False
             cbActiveOrdersOnly.Checked = True
         Catch ex As Exception
@@ -200,7 +220,7 @@ Public Class frmMain
             listJournal = Await character.GetWalletJournalAsync(2560)
             Me.tsslJournal.Text = "Cached Until: " & listJournal.CachedUntilAsString
 
-            fLoadJournal()
+            Await fLoadJournal()
         Catch ex As Exception
             sListOfErrors += "Failed to get Wallet Journal data" + vbLf
         End Try
@@ -210,28 +230,24 @@ Public Class frmMain
             listTransactions = Await character.GetWalletTransactionsAsync(2560)
             Me.tsslTransactions.Text = "Cached Until: " & listTransactions.CachedUntilAsString
 
-            fLoadTransactions()
+            Await fLoadTransactions()
         Catch ex As Exception
             sListOfErrors += "Failed to get Wallet Transaction data" + vbLf
         End Try
 
-        'Try
+        Try
 
-        '    frm.lblText.Text = "Loading Industry Jobs..."
-        '    Application.DoEvents()
-        '    listCharIndustryJobs = api.GetCharacterIndustryJobs
-        '    isApiOk("GetCharacterIndustryJobs", api.LastErrors)
-        '    If apiCorp IsNot Nothing Then
-        '        listCorpIndustryJobs = apiCorp.GetCorporationIndustryJobs
-        '        isApiOk("GetCorporationIndustryJobs", apiCorp.LastErrors)
-        '    End If
-        '    Me.tsslIndustry.Text = "Cached Until: " & api.LastQueryCachedUntil.ToLongDateString & " " & _
-        '                                    api.LastQueryCachedUntil.ToLongTimeString
+            UpdateStatus(frm, "Loading Industry Jobs...")
+            listCharIndustryJobs = Await character.GetIndustryJobsHistoryAsync()
+            If corporation IsNot Nothing Then
+                listCorpIndustryJobs = Await corporation.GetIndustryJobsHistoryAsync()
+            End If
+            Me.tsslIndustry.Text = "Cached Until: " & listCharIndustryJobs.CachedUntilAsString
 
-        '    fLoadIndustry()
-        'Catch ex As Exception
-        '    sListOfErrors += "Failed to get Industry Job data" + vbLf
-        'End Try
+            Await fLoadIndustry()
+        Catch ex As Exception
+            sListOfErrors += "Failed to get Industry Job data" + vbLf
+        End Try
 
         'Try
 
@@ -257,7 +273,7 @@ Public Class frmMain
 
     End Function
 
-    Private Async Function fLoadCharacterSheet(charSheet As Models.Character.CharacterSheet) As Threading.Tasks.Task
+    Private Async Sub fLoadCharacterSheet(charSheet As Models.Character.CharacterSheet)
 
         Dim iTotalSkillPoints As Integer
         Dim iIntEnhanced, iMemEnhanced, iPerEnhanced, iWilEnhanced, iChaEnhanced As Integer
@@ -355,7 +371,7 @@ Public Class frmMain
         End Try
 
 
-    End Function
+    End Sub
 
     Private Function GetTotalSkillPoints(argSkills As Models.EveOnlineRowCollection(Of Models.Character.Skill)) As Integer
 
@@ -432,7 +448,7 @@ Public Class frmMain
 
     End Function
 
-    Private Sub fLoadAssets()
+    Private Async Function fLoadAssets() As Task
 
         Dim objAsset As Models.Character.AssetList.Item
 
@@ -492,7 +508,7 @@ Public Class frmMain
             MessageBox.Show(ex.Message)
         End Try
 
-    End Sub
+    End Function
 
     Private Sub fAddAssetToTable(ByVal objAsset As Models.Character.AssetList.Item, ByVal bCharAsset As Boolean, ByVal objParent As Models.Character.AssetList.Item, ByVal iLocationID As Long, sContainer As String)
 
@@ -632,7 +648,7 @@ Public Class frmMain
 
     End Sub
 
-    Private Sub fLoadMarketOrders()
+    Private Async Function fLoadMarketOrders() As Task
 
         Dim objOrder As Models.Character.MarketOrders.MarketOrder
         Dim drOrder As DataRow
@@ -792,7 +808,7 @@ Public Class frmMain
             MessageBox.Show(ex.Message)
         End Try
 
-    End Sub
+    End Function
 
     Private Function GetOrderStateString(argOrderState As OrderState) As String
 
@@ -815,7 +831,7 @@ Public Class frmMain
 
     End Function
 
-    Private Sub fLoadJournal()
+    Private Async Function fLoadJournal() As Task
 
         Dim objEntry As Models.Character.WalletJournal.JournalEntry
         Dim drEntry As DataRow
@@ -935,9 +951,9 @@ Public Class frmMain
             MessageBox.Show(ex.Message)
         End Try
 
-    End Sub
+    End Function
 
-    Private Sub fLoadTransactions()
+    Private Async Function fLoadTransactions() As Task
 
         Dim objEntry As Models.Character.WalletTransactions.Transaction
         Dim drEntry As DataRow
@@ -968,7 +984,7 @@ Public Class frmMain
             Else
                 drEntry("CreditCol") = objEntry.Price
             End If
-            drEntry("EntryTimeCol") = objEntry.TransactionDate
+            drEntry("EntryTimeCol") = objEntry.TransactionDate.ToLocalTime
             drEntry("TypeCol") = objEntry.TypeName
             drEntry("PriceCol") = CDbl(objEntry.Price)
             drEntry("QtyCol") = CDbl(objEntry.Quantity)
@@ -1023,190 +1039,163 @@ Public Class frmMain
         dgvTransactions.Columns("ClientCol").HeaderText = "Client"
         dgvTransactions.Columns("WhereCol").HeaderText = "Where"
 
-    End Sub
+    End Function
 
 
-    'Private Sub fLoadIndustry()
+    Private Async Function fLoadIndustry() As Task
 
-    '    Dim objEntry As IndustryJob
-    '    Dim drEntry As DataRow
+        Dim objEntry As Models.Character.IndustryJobs.NewIndustryJob
+        Dim drEntry As DataRow
 
-    '    Dim StringType As System.Type = Type.GetType("System.String")
-    '    Dim DateType As System.Type = Type.GetType("System.DateTime")
-    '    Dim IntegerType As System.Type = Type.GetType("System.Int64")
+        Dim StringType As System.Type = Type.GetType("System.String")
+        Dim DateType As System.Type = Type.GetType("System.DateTime")
+        Dim IntegerType As System.Type = Type.GetType("System.Int64")
 
-    '    Dim sLoc As String
-    '    Dim spanRemaining As TimeSpan
+        Dim spanRemaining As TimeSpan
 
-    '    dsIndustry = New DataSet
-    '    dtIndustry = New DataTable
+        dsIndustry = New DataSet
+        dtIndustry = New DataTable
 
-    '    dtIndustry.Columns.Add("StateCol", StringType)
-    '    dtIndustry.Columns.Add("ActivityCol", StringType)
-    '    dtIndustry.Columns.Add("TypeCol", StringType)
-    '    dtIndustry.Columns.Add("LocationCol", StringType)
-    '    dtIndustry.Columns.Add("JumpsCol", IntegerType)
-    '    dtIndustry.Columns.Add("InstallerCol", StringType)
-    '    dtIndustry.Columns.Add("OwnerCol", StringType)
-    '    dtIndustry.Columns.Add("InstallDateCol", DateType)
-    '    dtIndustry.Columns.Add("EndDateCol", DateType)
-    '    dtIndustry.Columns.Add("TimeRemainingCol", StringType)
+        dtIndustry.Columns.Add("StateCol", StringType)
+        dtIndustry.Columns.Add("ActivityCol", StringType)
+        dtIndustry.Columns.Add("TypeCol", StringType)
+        dtIndustry.Columns.Add("LocationCol", StringType)
+        dtIndustry.Columns.Add("JumpsCol", IntegerType)
+        dtIndustry.Columns.Add("InstallerCol", StringType)
+        dtIndustry.Columns.Add("OwnerCol", StringType)
+        dtIndustry.Columns.Add("InstallDateCol", DateType)
+        dtIndustry.Columns.Add("EndDateCol", DateType)
+        dtIndustry.Columns.Add("TimeRemainingCol", StringType)
 
-    '    dtIndustry.TableName = "IndustryJobs"
+        dtIndustry.TableName = "IndustryJobs"
 
-    '    Dim lookup As New EveAI.Live.Generic.CharacterNameLookupApi()
-    '    Dim sCorpName As String = api.GetCharacterSheet.CorporationName
+        'Dim lookup As New EveAI.Live.Generic.CharacterNameLookupApi()
+        'Dim sCorpName As String = api.GetCharacterSheet.CorporationName
 
-    '    If listCharIndustryJobs IsNot Nothing Then
-    '        For Each objEntry In listCharIndustryJobs
-    '            If Not lookup.CharacterIDsToLookup.Contains(objEntry.InstallerID) Then
-    '                lookup.CharacterIDsToLookup.Add(objEntry.InstallerID)
-    '            End If
-    '        Next
-    '    End If
+        'If listCharIndustryJobs IsNot Nothing Then
+        '    For Each objEntry In listCharIndustryJobs.Result.Jobs
+        '        If Not lookup.CharacterIDsToLookup.Contains(objEntry.InstallerId) Then
+        '            lookup.CharacterIDsToLookup.Add(objEntry.InstallerId)
+        '        End If
+        '    Next
+        'End If
 
-    '    If listCorpIndustryJobs IsNot Nothing Then
-    '        For Each objEntry In listCorpIndustryJobs
-    '            If Not lookup.CharacterIDsToLookup.Contains(objEntry.InstallerID) Then
-    '                lookup.CharacterIDsToLookup.Add(objEntry.InstallerID)
-    '            End If
-    '        Next
-    '    End If
+        'If listCorpIndustryJobs IsNot Nothing Then
+        '    For Each objEntry In listCorpIndustryJobs
+        '        If Not lookup.CharacterIDsToLookup.Contains(objEntry.InstallerID) Then
+        '            lookup.CharacterIDsToLookup.Add(objEntry.InstallerID)
+        '        End If
+        '    Next
+        'End If
 
-    '    lookup.UpdateData()
+        'lookup.UpdateData()
 
-    '    If listCharIndustryJobs IsNot Nothing Then
+        If listCharIndustryJobs.Result.Jobs IsNot Nothing Then
 
-    '        For Each objEntry In listCharIndustryJobs
-    '            drEntry = dtIndustry.NewRow
+            For Each objEntry In listCharIndustryJobs.Result.Jobs
+                drEntry = dtIndustry.NewRow
 
-    '            If objEntry.IsCompleted = False Then
-    '                If Now > objEntry.ProductionEndLocalTime Then
-    '                    drEntry("StateCol") = "Ready"
-    '                Else
-    '                    If Now < objEntry.ProductionBeginLocalTime Then
-    '                        drEntry("StateCol") = "Pending"
-    '                    Else
-    '                        drEntry("StateCol") = "In Progress"
-    '                    End If
-    '                End If
+                drEntry("StateCol") = CType(objEntry.Status, JobStatus).ToString
 
-    '                If Now < objEntry.ProductionEndLocalTime Then
-    '                    spanRemaining = objEntry.ProductionEndLocalTime - Now
-    '                Else
-    '                    spanRemaining = TimeSpan.Zero
-    '                End If
+                If Now < objEntry.EndDate.ToLocalTime Then
+                    spanRemaining = objEntry.EndDate.ToLocalTime - Now
+                Else
+                    spanRemaining = TimeSpan.Zero
+                End If
 
-    '                drEntry("ActivityCol") = objEntry.Activity.ToString
-    '                drEntry("TypeCol") = objEntry.InstalledItem.ToString
-    '                drEntry("LocationCol") = objEntry.InstallLocation.Container.Name
-    '                drEntry("JumpsCol") = 0 'objEntry.InstallLocation.ContainerLocation.Jumps
-    '                drEntry("InstallerCol") = lookup.FindEntry(objEntry.InstallerID)
-    '                drEntry("OwnerCol") = drEntry("InstallerCol")
-    '                drEntry("InstallDateCol") = objEntry.InstallTimeLocalTime
-    '                drEntry("EndDateCol") = objEntry.ProductionEndLocalTime
-    '                drEntry("TimeRemainingCol") = fGetTimeString(spanRemaining)
+                drEntry("ActivityCol") = ActivityIDLookup(objEntry.ActivityId)
+                drEntry("TypeCol") = objEntry.ProductTypeName
+                drEntry("LocationCol") = objEntry.SolarSystemName
+                drEntry("JumpsCol") = 0 'objEntry.InstallLocation.ContainerLocation.Jumps
+                drEntry("InstallerCol") = objEntry.InstallerName
+                drEntry("OwnerCol") = drEntry("InstallerCol")
+                drEntry("InstallDateCol") = objEntry.StartDate.ToLocalTime
+                drEntry("EndDateCol") = objEntry.EndDate.ToLocalTime
+                drEntry("TimeRemainingCol") = fGetTimeString(spanRemaining)
 
-    '                dtIndustry.Rows.Add(drEntry)
-    '            End If
+                dtIndustry.Rows.Add(drEntry)
 
-    '        Next
-    '    End If
+            Next
+        End If
 
-    '    If listCorpIndustryJobs IsNot Nothing Then
+        If listCorpIndustryJobs.Result.Jobs IsNot Nothing Then
 
-    '        For Each objEntry In listCorpIndustryJobs
-    '            drEntry = dtIndustry.NewRow
+            For Each objEntry In listCorpIndustryJobs.Result.Jobs
+                drEntry = dtIndustry.NewRow
 
-    '            If objEntry.IsCompleted = False Then
-    '                If Now > objEntry.ProductionEndLocalTime Then
-    '                    drEntry("StateCol") = "Ready"
-    '                Else
-    '                    If Now < objEntry.ProductionBeginLocalTime Then
-    '                        drEntry("StateCol") = "Pending"
-    '                    Else
-    '                        drEntry("StateCol") = "In Progress"
-    '                    End If
-    '                End If
+                drEntry("StateCol") = CType(objEntry.Status, JobStatus).ToString
 
-    '                If objEntry.InstallLocation.Container Is Nothing Then
-    '                    sLoc = objEntry.InstallLocation.ContainerType.Name & " in " & objEntry.InstallLocation.ContainerLocation.Name
-    '                Else
-    '                    sLoc = objEntry.InstallLocation.Container.Name
-    '                End If
+                If Now < objEntry.EndDate.ToLocalTime Then
+                    spanRemaining = objEntry.EndDate.ToLocalTime - Now
+                Else
+                    spanRemaining = TimeSpan.Zero
+                End If
 
-    '                If Now < objEntry.ProductionEndLocalTime Then
-    '                    spanRemaining = objEntry.ProductionEndLocalTime - Now
-    '                Else
-    '                    spanRemaining = TimeSpan.Zero
-    '                End If
+                drEntry("ActivityCol") = ActivityIDLookup(objEntry.ActivityId)
+                drEntry("TypeCol") = objEntry.ProductTypeName
+                drEntry("LocationCol") = objEntry.SolarSystemName
+                drEntry("JumpsCol") = 0 'objEntry.InstallLocation.ContainerLocation.Jumps
+                drEntry("InstallerCol") = objEntry.InstallerName
+                drEntry("OwnerCol") = character.CorporationName
+                drEntry("InstallDateCol") = objEntry.StartDate.ToLocalTime
+                drEntry("EndDateCol") = objEntry.EndDate.ToLocalTime
+                drEntry("TimeRemainingCol") = fGetTimeString(spanRemaining)
 
-    '                drEntry("ActivityCol") = objEntry.Activity.ToString
-    '                drEntry("TypeCol") = objEntry.InstalledItem.ToString
-    '                drEntry("LocationCol") = sLoc
-    '                drEntry("JumpsCol") = 0 'objEntry.InstallLocation.ContainerLocation.Jumps
-    '                drEntry("InstallerCol") = lookup.FindEntry(objEntry.InstallerID)
-    '                drEntry("OwnerCol") = sCorpName
-    '                drEntry("InstallDateCol") = objEntry.InstallTimeLocalTime
-    '                drEntry("EndDateCol") = objEntry.ProductionEndLocalTime
-    '                drEntry("TimeRemainingCol") = fGetTimeString(spanRemaining)
+                dtIndustry.Rows.Add(drEntry)
 
-    '                dtIndustry.Rows.Add(drEntry)
-    '            End If
+            Next
+        End If
 
-    '        Next
-    '    End If
+        dsIndustry.Tables.Add(dtIndustry)
 
-    '    dsIndustry.Tables.Add(dtIndustry)
+        bsIndustry = New BindingSource
 
-    '    bsIndustry = New BindingSource
+        bsIndustry.DataSource = dsIndustry
+        bsIndustry.DataMember = dsIndustry.Tables(0).TableName
 
-    '    bsIndustry.DataSource = dsIndustry
-    '    bsIndustry.DataMember = dsIndustry.Tables(0).TableName
+        dgvIndustry.DataSource = bsIndustry
 
-    '    dgvIndustry.DataSource = bsIndustry
+        dgvIndustry.Visible = True
 
-    '    dgvIndustry.Visible = True
+        dgvIndustry.Sort(dgvIndustry.Columns("InstallDateCol"), System.ComponentModel.ListSortDirection.Descending)
 
-    '    dgvIndustry.Sort(dgvIndustry.Columns("InstallDateCol"), System.ComponentModel.ListSortDirection.Descending)
+        dgvIndustry.Columns("InstallDateCol").DefaultCellStyle.Format = "yyyy.MM.dd HH:mm"
+        dgvIndustry.Columns("EndDateCol").DefaultCellStyle.Format = "yyyy.MM.dd HH:mm"
 
-    '    dgvIndustry.Columns("InstallDateCol").DefaultCellStyle.Format = "yyyy.MM.dd HH:mm"
-    '    dgvIndustry.Columns("EndDateCol").DefaultCellStyle.Format = "yyyy.MM.dd HH:mm"
+        dgvIndustry.Columns("StateCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+        dgvIndustry.Columns("ActivityCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+        dgvIndustry.Columns("TypeCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+        dgvIndustry.Columns("LocationCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+        dgvIndustry.Columns("JumpsCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+        dgvIndustry.Columns("InstallerCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+        dgvIndustry.Columns("OwnerCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+        dgvIndustry.Columns("InstallDateCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+        dgvIndustry.Columns("EndDateCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+        dgvIndustry.Columns("TimeRemainingCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
 
-    '    dgvIndustry.Columns("StateCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvIndustry.Columns("ActivityCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvIndustry.Columns("TypeCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvIndustry.Columns("LocationCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvIndustry.Columns("JumpsCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvIndustry.Columns("InstallerCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvIndustry.Columns("OwnerCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvIndustry.Columns("InstallDateCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvIndustry.Columns("EndDateCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvIndustry.Columns("TimeRemainingCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+        dgvIndustry.Columns("StateCol").Width = 100
+        dgvIndustry.Columns("ActivityCol").Width = 125
+        dgvIndustry.Columns("TypeCol").Width = 200
+        dgvIndustry.Columns("JumpsCol").Width = 50
+        dgvIndustry.Columns("LocationCol").Width = 250
+        dgvIndustry.Columns("InstallerCol").Width = 150
+        dgvIndustry.Columns("OwnerCol").Width = 150
+        dgvIndustry.Columns("InstallDateCol").Width = 100
+        dgvIndustry.Columns("EndDateCol").Width = 100
+        dgvIndustry.Columns("TimeRemainingCol").Width = 200
 
-    '    dgvIndustry.Columns("StateCol").Width = 100
-    '    dgvIndustry.Columns("ActivityCol").Width = 125
-    '    dgvIndustry.Columns("TypeCol").Width = 200
-    '    dgvIndustry.Columns("JumpsCol").Width = 50
-    '    dgvIndustry.Columns("LocationCol").Width = 250
-    '    dgvIndustry.Columns("InstallerCol").Width = 150
-    '    dgvIndustry.Columns("OwnerCol").Width = 150
-    '    dgvIndustry.Columns("InstallDateCol").Width = 100
-    '    dgvIndustry.Columns("EndDateCol").Width = 100
-    '    dgvIndustry.Columns("TimeRemainingCol").Width = 200
+        dgvIndustry.Columns("StateCol").HeaderText = "State"
+        dgvIndustry.Columns("ActivityCol").HeaderText = "Activity"
+        dgvIndustry.Columns("TypeCol").HeaderText = "Type"
+        dgvIndustry.Columns("LocationCol").HeaderText = "Location"
+        dgvIndustry.Columns("JumpsCol").HeaderText = "Jumps"
+        dgvIndustry.Columns("InstallerCol").HeaderText = "Installer"
+        dgvIndustry.Columns("OwnerCol").HeaderText = "Owner"
+        dgvIndustry.Columns("InstallDateCol").HeaderText = "Install Date"
+        dgvIndustry.Columns("EndDateCol").HeaderText = "End Date"
+        dgvIndustry.Columns("TimeRemainingCol").HeaderText = "Remaining"
 
-    '    dgvIndustry.Columns("StateCol").HeaderText = "State"
-    '    dgvIndustry.Columns("ActivityCol").HeaderText = "Activity"
-    '    dgvIndustry.Columns("TypeCol").HeaderText = "Type"
-    '    dgvIndustry.Columns("LocationCol").HeaderText = "Location"
-    '    dgvIndustry.Columns("JumpsCol").HeaderText = "Jumps"
-    '    dgvIndustry.Columns("InstallerCol").HeaderText = "Installer"
-    '    dgvIndustry.Columns("OwnerCol").HeaderText = "Owner"
-    '    dgvIndustry.Columns("InstallDateCol").HeaderText = "Install Date"
-    '    dgvIndustry.Columns("EndDateCol").HeaderText = "End Date"
-    '    dgvIndustry.Columns("TimeRemainingCol").HeaderText = "Remaining"
-
-    'End Sub
+    End Function
 
     'Private Sub fLoadNotifications()
 
@@ -1531,6 +1520,25 @@ Public Class frmMain
 
     End Sub
 
+    Private Async Function MakeMapsAsync() As task
+
+        Dim objTasks As New List(Of Task)
+
+        objTasks.Add(MakeSkillMapAsync())
+        objTasks.Add(MakeItemMapAsync())
+        objTasks.Add(MakeGroupMapAsync())
+        objTasks.Add(MakeNameMapAsync())
+        objTasks.Add(MakeCategoryMapAsync())
+        objTasks.Add(MakeFlagMapAsync())
+
+        Await Task.WhenAll(objTasks)
+
+    End Function
+
+    Private Function MakeSkillMapAsync() As task
+        Return Task.Run(Sub() MakeSkillMap())
+    End Function
+
     Private Sub MakeSkillMap()
 
         For Each objSkillGroup As Models.Misc.SkillTree.SkillGroup In objSkillTree.Result.Groups
@@ -1541,6 +1549,9 @@ Public Class frmMain
 
     End Sub
 
+    Private Function MakeItemMapAsync() As task
+        Return Task.Run(Sub() MakeItemMap())
+    End Function
 
     Private Sub MakeItemMap()
 
@@ -1570,6 +1581,10 @@ Public Class frmMain
 
     End Sub
 
+    Private Function MakeGroupMapAsync() As task
+        Return Task.Run(Sub() MakeGroupMap())
+    End Function
+
     Private Sub MakeGroupMap()
 
         'GROUPID	CATEGORYID	GROUPNAME	DESCRIPTION	ICONID	USEBASEPRICE	ALLOWMANUFACTURE	ALLOWRECYCLER	ANCHORED	ANCHORABLE	FITTABLENONSINGLETON	PUBLISHED
@@ -1598,6 +1613,10 @@ Public Class frmMain
         End Using
 
     End Sub
+
+    Private Function MakeNameMapAsync() As task
+        Return Task.Run(Sub() MakeNameMap())
+    End Function
 
     Private Sub MakeNameMap()
         '// locationID is a tricky one; for >= 66000000 and < 67000000 -> subtract 6000001
@@ -1640,16 +1659,8 @@ Public Class frmMain
 
     End Sub
 
-    Private Function NameLookup(iLocationID As Long) As String
-
-        If iLocationID >= 66000000 And iLocationID < 66014933 Then
-            Return dicNames(iLocationID - 6000001).ItemName
-        ElseIf iLocationID >= 66014934 And iLocationID < 67999999 Then
-            Return dicNames(iLocationID - 6000000).ItemName
-        Else
-            Return dicNames(iLocationID).ItemName
-        End If
-
+    Private Function MakeCategoryMapAsync() As task
+        Return Task.Run(Sub() MakeCategoryMap())
     End Function
 
     Private Sub MakeCategoryMap()
@@ -1680,6 +1691,9 @@ Public Class frmMain
 
     End Sub
 
+    Private Function MakeFlagMapAsync() As task
+        Return Task.Run(Sub() MakeFlagMap())
+    End Function
 
     Private Sub MakeFlagMap()
 
@@ -1709,5 +1723,42 @@ Public Class frmMain
         End Using
 
     End Sub
+
+    Private Function NameLookup(iLocationID As Long) As String
+
+        If iLocationID >= 66000000 And iLocationID < 66014933 Then
+            Return dicNames(iLocationID - 6000001).ItemName
+        ElseIf iLocationID >= 66014934 And iLocationID < 67999999 Then
+            Return dicNames(iLocationID - 6000000).ItemName
+        Else
+            Return dicNames(iLocationID).ItemName
+        End If
+
+    End Function
+
+    Private Function ActivityIDLookup(argActivityID As Integer) As String
+
+        Select Case argActivityID
+            Case ActivityID.Manufacturing
+                Return "Manufacturing"
+            Case ActivityID.Copying
+                Return "Copying"
+            Case ActivityID.Duplicating
+                Return "Duplicating"
+            Case ActivityID.Invention
+                Return "Invention"
+            Case ActivityID.Researching_Material_Productivity
+                Return "Researching Material Productivity"
+            Case ActivityID.Researching_Technology
+                Return "Researching Technology"
+            Case ActivityID.Researching_Time_Productivity
+                Return "Researching Time Productivity"
+            Case ActivityID.Reverse_Engineering
+                Return "Reverse Engineering"
+            Case Else
+                Return "Unknown"
+        End Select
+
+    End Function
 
 End Class
