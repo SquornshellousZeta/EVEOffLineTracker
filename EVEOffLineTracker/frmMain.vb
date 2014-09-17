@@ -117,11 +117,22 @@ Public Class frmMain
 
     End Sub
 
+    Public Sub InvokeControl(Of T As Control)(ByVal Control As T, ByVal Action As Action(Of T))
+        If Control.InvokeRequired Then
+            Control.Invoke(New Action(Of T, Action(Of T))(AddressOf InvokeControl), New Object() {Control, Action})
+        Else
+            Action(Control)
+        End If
+    End Sub
+
+
     Private Async Function fLoadEVEData() As Threading.Tasks.Task
 
         Dim frm As frmLoading
 
         sListOfErrors = ""
+
+        TabControl1.Enabled = False
 
         If IO.File.Exists(sAPIFilename & sAPIFileExt) Then
             fGetAPIInfoFromFile()
@@ -158,7 +169,9 @@ Public Class frmMain
             UpdateStatus(frm, "Getting Corp API information")
         End If
 
+
         Try
+
 
             UpdateStatus(frm, "Loading Character Sheet...")
             charSheetResponse = Await character.GetCharacterSheetAsync()
@@ -267,6 +280,8 @@ Public Class frmMain
 
         frm.Close()
 
+        TabControl1.Enabled = True
+
         'If sListOfErrors.Trim.Length > 0 Then
         '    MessageBox.Show(frmLoading, sListOfErrors, "ERROR!", MessageBoxButtons.OK, MessageBoxIcon.Error)
         'End If
@@ -284,78 +299,83 @@ Public Class frmMain
 
             iTotalSkillPoints = GetTotalSkillPoints(charSheet.Skills)
 
-            Me.lblName.Text = charSheet.Name
+            InvokeControl(lblName, Sub(x) x.Text = charSheet.Name)  'Me.lblName.Text = charSheet.Name
             sCharacterName = charSheet.Name
-            Me.lblRace.Text = charSheet.Race
-            Me.lblCorporation.Text = charSheet.CorporationName
-            Me.lblGender.Text = charSheet.Gender
-            Me.lblSkillpoints.Text = String.Format("{0:#,0}", iTotalSkillPoints)
-            Me.lblCloneInfo.Text = String.Format("{0:#,0}", charSheet.CloneSkillPoints) & "  (" & charSheet.CloneName & ")"
+            InvokeControl(lblRace, Sub(x) x.Text = charSheet.Race)  'Me.lblRace.Text = charSheet.Race
+            InvokeControl(lblCorporation, Sub(x) x.Text = charSheet.CorporationName)  'Me.lblCorporation.Text = charSheet.CorporationName
+            InvokeControl(lblGender, Sub(x) x.Text = charSheet.Gender)  'Me.lblGender.Text = charSheet.Gender
+            InvokeControl(lblSkillpoints, Sub(x) x.Text = String.Format("{0:#,0}", iTotalSkillPoints))  'Me.lblSkillpoints.Text = String.Format("{0:#,0}", iTotalSkillPoints)
+            InvokeControl(lblCloneInfo, Sub(x) x.Text = String.Format("{0:#,0}", charSheet.CloneSkillPoints) & "  (" & charSheet.CloneName & ")")  'Me.lblCloneInfo.Text = String.Format("{0:#,0}", charSheet.CloneSkillPoints) & "  (" & charSheet.CloneName & ")"
             If iTotalSkillPoints > charSheet.CloneSkillPoints Then
-                Me.lblSkillpoints.ForeColor = Color.Red
+                InvokeControl(lblSkillpoints, Sub(x) x.ForeColor = Color.Red)  'Me.lblSkillpoints.ForeColor = Color.Red
             End If
-            Me.lblBalance.Text = String.Format("{0:#,#.00 ISK}", charSheet.Balance)
+            InvokeControl(lblBalance, Sub(x) x.Text = String.Format("{0:#,#.00 ISK}", charSheet.Balance))  'Me.lblBalance.Text = String.Format("{0:#,#.00 ISK}", charSheet.Balance)
 
             If (charSheet.AttributeEnhancers.Intelligence IsNot Nothing) Then
                 iIntEnhanced = charSheet.AttributeEnhancers.Intelligence.Value
-                Me.lblIntImplant.Text = "+" & CStr(iIntEnhanced)
+                InvokeControl(lblIntImplant, Sub(x) x.Text = "+" & CStr(iIntEnhanced))  'Me.lblIntImplant.Text = "+" & CStr(iIntEnhanced)
             Else
-                Me.lblIntImplant.Text = "-"
+                InvokeControl(lblIntImplant, Sub(x) x.Text = "-")  'Me.lblIntImplant.Text = "-"
             End If
             If (charSheet.AttributeEnhancers.Memory IsNot Nothing) Then
                 iMemEnhanced = charSheet.AttributeEnhancers.Memory.Value
-                Me.lblMemImplant.Text = "+" & CStr(iMemEnhanced)
+                InvokeControl(lblMemImplant, Sub(x) x.Text = "+" & CStr(iMemEnhanced))  'Me.lblMemImplant.Text = "+" & CStr(iMemEnhanced)
             Else
-                Me.lblMemImplant.Text = "-"
+                InvokeControl(lblMemImplant, Sub(x) x.Text = "-")  'Me.lblMemImplant.Text = "-"
             End If
             If (charSheet.AttributeEnhancers.Perception IsNot Nothing) Then
                 iPerEnhanced = charSheet.AttributeEnhancers.Perception.Value
-                Me.lblPerImplant.Text = "+" & CStr(iPerEnhanced)
+                InvokeControl(lblPerImplant, Sub(x) x.Text = "+" & CStr(iPerEnhanced))  'Me.lblPerImplant.Text = "+" & CStr(iPerEnhanced)
             Else
-                Me.lblPerImplant.Text = "-"
+                InvokeControl(lblPerImplant, Sub(x) x.Text = "-")  'Me.lblPerImplant.Text = "-"
             End If
             If (charSheet.AttributeEnhancers.Willpower IsNot Nothing) Then
                 iWilEnhanced = charSheet.AttributeEnhancers.Willpower.Value
-                Me.lblWillImplant.Text = "+" & CStr(iWilEnhanced)
+                InvokeControl(lblWillImplant, Sub(x) x.Text = "+" & CStr(iWilEnhanced))  'Me.lblWillImplant.Text = "+" & CStr(iWilEnhanced)
             Else
-                Me.lblWillImplant.Text = "-"
+                InvokeControl(lblWillImplant, Sub(x) x.Text = "-")  'Me.lblWillImplant.Text = "-"
             End If
             If (charSheet.AttributeEnhancers.Charisma IsNot Nothing) Then
                 iChaEnhanced = charSheet.AttributeEnhancers.Charisma.Value
-                Me.lblChaImplant.Text = "+" & CStr(iChaEnhanced)
+                InvokeControl(lblChaImplant, Sub(x) x.Text = "+" & CStr(iChaEnhanced))  'Me.lblChaImplant.Text = "+" & CStr(iChaEnhanced)
             Else
-                Me.lblChaImplant.Text = "-"
+                InvokeControl(lblChaImplant, Sub(x) x.Text = "-")  'Me.lblChaImplant.Text = "-"
             End If
 
-            Me.lblInt.Text = String.Format("{0:#.00}", charSheet.Attributes.Intelligence + iIntEnhanced) & "  (" & _
-                            String.Format("{0:#}", charSheet.Attributes.Intelligence) & ")"
-            Me.lblMem.Text = String.Format("{0:#.00}", charSheet.Attributes.Memory + iMemEnhanced) & "  (" & _
+            Dim sTotalInt, sTotalMem, sTotalPer, sTotalWil, sTotalCha As String
+
+            sTotalInt = String.Format("{0:#.00}", charSheet.Attributes.Intelligence + iIntEnhanced) & "  (" & _
+                        String.Format("{0:#}", charSheet.Attributes.Intelligence) & ")"
+            sTotalMem = String.Format("{0:#.00}", charSheet.Attributes.Memory + iMemEnhanced) & "  (" & _
                             String.Format("{0:#}", charSheet.Attributes.Memory) & ")"
-            Me.lblPer.Text = String.Format("{0:#.00}", charSheet.Attributes.Perception + iPerEnhanced) & "  (" & _
+            sTotalPer = String.Format("{0:#.00}", charSheet.Attributes.Perception + iPerEnhanced) & "  (" & _
                             String.Format("{0:#}", charSheet.Attributes.Perception) & ")"
-            Me.lblWill.Text = String.Format("{0:#.00}", charSheet.Attributes.Willpower + iWilEnhanced) & "  (" & _
+            sTotalWil = String.Format("{0:#.00}", charSheet.Attributes.Willpower + iWilEnhanced) & "  (" & _
                             String.Format("{0:#}", charSheet.Attributes.Willpower) & ")"
-            Me.lblCha.Text = String.Format("{0:#.00}", charSheet.Attributes.Charisma + iChaEnhanced) & "  (" & _
+            sTotalCha = String.Format("{0:#.00}", charSheet.Attributes.Charisma + iChaEnhanced) & "  (" & _
                             String.Format("{0:#}", charSheet.Attributes.Charisma) & ")"
+
+            InvokeControl(lblInt, Sub(x) x.Text = sTotalInt)
+            InvokeControl(lblMem, Sub(x) x.Text = sTotalMem)
+            InvokeControl(lblPer, Sub(x) x.Text = sTotalPer)
+            InvokeControl(lblWill, Sub(x) x.Text = sTotalWil)
+            InvokeControl(lblCha, Sub(x) x.Text = sTotalCha)
 
             objImage = New Image()
 
             Await objImage.GetCharacterPortraitAsync(lCharacterID, eZet.EveLib.Modules.Image.CharacterPortraitSize.X256, "D:\\temp")
             sImageFile = IO.Path.Combine("D:\temp", lCharacterID.ToString & "_" & eZet.EveLib.Modules.Image.CharacterPortraitSize.X256 & ".jpg")
-            Me.picImage.Image = System.Drawing.Image.FromFile(sImageFile)
+            InvokeControl(picImage, Sub(x) x.Image = System.Drawing.Image.FromFile(sImageFile))   'Me.picImage.Image = System.Drawing.Image.FromFile(sImageFile)
 
             Await objImage.GetCorporationLogoAsync(charSheet.CorporationId, eZet.EveLib.Modules.Image.CorporationLogoSize.X64, "D:\\temp")
             sImageFile = IO.Path.Combine("D:\temp", charSheet.CorporationId.ToString & "_" & eZet.EveLib.Modules.Image.CorporationLogoSize.X64 & ".png")
-            Me.imgCorp.Image = System.Drawing.Image.FromFile(sImageFile)
+            InvokeControl(imgCorp, Sub(x) x.Image = System.Drawing.Image.FromFile(sImageFile))   'Me.imgCorp.Image = System.Drawing.Image.FromFile(sImageFile)
 
             If charSheet.AllianceId > 0 Then
                 Await objImage.GetAllianceLogoAsync(charSheet.AllianceId, eZet.EveLib.Modules.Image.AllianceLogoSize.X64, "D:\\temp")
                 sImageFile = IO.Path.Combine("D:\temp", lCharacterID.ToString & "_" & eZet.EveLib.Modules.Image.AllianceLogoSize.X64 & ".png")
-                Me.imgAlliance.Image = System.Drawing.Image.FromFile(sImageFile)
+                InvokeControl(imgAlliance, Sub(x) x.Image = System.Drawing.Image.FromFile(sImageFile))   'Me.imgAlliance.Image = System.Drawing.Image.FromFile(sImageFile)
             End If
-
-            'Me.imgCorp.Image = EveAI.Live.ImageServer.DownloadCorporationImage(charSheet.CorporationID, ImageServer.ImageSize.Size64px)
-            ' Me.imgAlliance.Image = EveAI.Live.ImageServer.DownloadAllianceImage(api.GetCorporationSheet.AllianceID, ImageServer.ImageSize.Size64px)
 
             objSkillInTraining = character.GetSkillTraining
             If objSkillInTraining.Result.TypeId = 0 Then
@@ -391,14 +411,14 @@ Public Class frmMain
         Dim spanRemaining As TimeSpan
         Dim sRemaining As String
 
-        lbSkillQueue.Items.Clear()
-        lbSkillLevel.Items.Clear()
-        lbSkillTimeRemaining.Items.Clear()
+        InvokeControl(lbSkillQueue, Sub(x) lbSkillQueue.Items.Clear())    'lbSkillQueue.Items.Clear()
+        InvokeControl(lbSkillLevel, Sub(x) lbSkillLevel.Items.Clear())    'lbSkillLevel.Items.Clear()
+        InvokeControl(lbSkillTimeRemaining, Sub(x) lbSkillTimeRemaining.Items.Clear())    'lbSkillTimeRemaining.Items.Clear()
 
         If argSkillsInQueue IsNot Nothing Then
             For Each objSkill In argSkillsInQueue.Queue
-                lbSkillQueue.Items.Add(dicSkills(objSkill.TypeId).TypeName)
-                lbSkillLevel.Items.Add(objSkill.Level)
+                InvokeControl(lbSkillQueue, Sub(x) lbSkillQueue.Items.Add(dicSkills(objSkill.TypeId).TypeName))    'lbSkillQueue.Items.Add(dicSkills(objSkill.TypeId).TypeName)
+                InvokeControl(lbSkillLevel, Sub(x) lbSkillLevel.Items.Add(objSkill.Level))    'lbSkillLevel.Items.Add(objSkill.Level)
                 If IsNothing(objSkill.EndTime) Then
                     sRemaining = "Paused"
                 Else
@@ -410,7 +430,7 @@ Public Class frmMain
                     sRemaining = fGetTimeString(spanRemaining)
 
                 End If
-                lbSkillTimeRemaining.Items.Add(sRemaining)
+                InvokeControl(lbSkillTimeRemaining, Sub(x) lbSkillTimeRemaining.Items.Add(sRemaining))    'lbSkillTimeRemaining.Items.Add(sRemaining)
             Next
         End If
 
@@ -982,7 +1002,7 @@ Public Class frmMain
             If objEntry.TransactionType = Models.OrderType.Buy Then
                 drEntry("CreditCol") = -objEntry.Price * objEntry.Quantity
             Else
-                drEntry("CreditCol") = objEntry.Price
+                drEntry("CreditCol") = objEntry.Price * objEntry.Quantity
             End If
             drEntry("EntryTimeCol") = objEntry.TransactionDate.ToLocalTime
             drEntry("TypeCol") = objEntry.TypeName
