@@ -112,7 +112,7 @@ Partial Class frmMain
         Me.ToolStripStatusLabel4 = New System.Windows.Forms.ToolStripStatusLabel()
         Me.dgvTransactions = New System.Windows.Forms.DataGridView()
         Me.tabIndustry = New System.Windows.Forms.TabPage()
-        Me.chkMeOnly = New System.Windows.Forms.CheckBox()
+        Me.chkActiveOnly = New System.Windows.Forms.CheckBox()
         Me.dgvIndustry = New System.Windows.Forms.DataGridView()
         Me.ssIndustry = New System.Windows.Forms.StatusStrip()
         Me.tsslIndustry = New System.Windows.Forms.ToolStripStatusLabel()
@@ -1014,7 +1014,7 @@ Partial Class frmMain
         '
         'tabIndustry
         '
-        Me.tabIndustry.Controls.Add(Me.chkMeOnly)
+        Me.tabIndustry.Controls.Add(Me.chkActiveOnly)
         Me.tabIndustry.Controls.Add(Me.dgvIndustry)
         Me.tabIndustry.Controls.Add(Me.ssIndustry)
         Me.tabIndustry.Location = New System.Drawing.Point(4, 22)
@@ -1025,15 +1025,15 @@ Partial Class frmMain
         Me.tabIndustry.Text = "Industry"
         Me.tabIndustry.UseVisualStyleBackColor = True
         '
-        'chkMeOnly
+        'chkActiveOnly
         '
-        Me.chkMeOnly.AutoSize = True
-        Me.chkMeOnly.Location = New System.Drawing.Point(8, 6)
-        Me.chkMeOnly.Name = "chkMeOnly"
-        Me.chkMeOnly.Size = New System.Drawing.Size(113, 17)
-        Me.chkMeOnly.TabIndex = 13
-        Me.chkMeOnly.Text = "Show my jobs only"
-        Me.chkMeOnly.UseVisualStyleBackColor = True
+        Me.chkActiveOnly.AutoSize = True
+        Me.chkActiveOnly.Location = New System.Drawing.Point(8, 6)
+        Me.chkActiveOnly.Name = "chkActiveOnly"
+        Me.chkActiveOnly.Size = New System.Drawing.Size(133, 17)
+        Me.chkActiveOnly.TabIndex = 13
+        Me.chkActiveOnly.Text = "Show current jobs only"
+        Me.chkActiveOnly.UseVisualStyleBackColor = True
         '
         'dgvIndustry
         '
@@ -1293,7 +1293,7 @@ Partial Class frmMain
     Friend WithEvents tsslNotifications As System.Windows.Forms.ToolStripStatusLabel
     Friend WithEvents ToolStripStatusLabel6 As System.Windows.Forms.ToolStripStatusLabel
     Friend WithEvents dgvNotifications As System.Windows.Forms.DataGridView
-    Friend WithEvents chkMeOnly As System.Windows.Forms.CheckBox
+    Friend WithEvents chkActiveOnly As System.Windows.Forms.CheckBox
     Friend WithEvents lblNumOrders As System.Windows.Forms.Label
     Friend WithEvents cbActiveOrdersOnly As System.Windows.Forms.CheckBox
     Friend WithEvents imgAlliance As System.Windows.Forms.PictureBox

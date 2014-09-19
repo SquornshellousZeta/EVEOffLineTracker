@@ -43,6 +43,8 @@ Public Class frmMain
     Private listCorpIndustryJobs As Models.EveApiResponse(Of Models.Character.IndustryJobs)
     'Private listNotifications As List(Of Character.Notification)
 
+    Private listCorpFacilities As Models.EveApiResponse(Of Models.Corporation.Facilities)
+
     Private dsAssets As DataSet
     Private dtAssets As DataTable
     Private bsAssets As BindingSource
@@ -1072,148 +1074,195 @@ Public Class frmMain
         Dim IntegerType As System.Type = Type.GetType("System.Int64")
 
         Dim spanRemaining As TimeSpan
+        Dim sRemainingTime As String = ""
 
-        dsIndustry = New DataSet
-        dtIndustry = New DataTable
+        Try
 
-        dtIndustry.Columns.Add("StateCol", StringType)
-        dtIndustry.Columns.Add("ActivityCol", StringType)
-        dtIndustry.Columns.Add("TypeCol", StringType)
-        dtIndustry.Columns.Add("LocationCol", StringType)
-        dtIndustry.Columns.Add("JumpsCol", IntegerType)
-        dtIndustry.Columns.Add("InstallerCol", StringType)
-        dtIndustry.Columns.Add("OwnerCol", StringType)
-        dtIndustry.Columns.Add("InstallDateCol", DateType)
-        dtIndustry.Columns.Add("EndDateCol", DateType)
-        dtIndustry.Columns.Add("TimeRemainingCol", StringType)
+            dsIndustry = New DataSet
+            dtIndustry = New DataTable
 
-        dtIndustry.TableName = "IndustryJobs"
+            dtIndustry.Columns.Add("StatusCol", StringType)
+            dtIndustry.Columns.Add("TimeRemainingCol", IntegerType)
+            dtIndustry.Columns.Add("JobRunsCol", StringType)
+            dtIndustry.Columns.Add("ActivityCol", StringType)
+            dtIndustry.Columns.Add("BlueprintCol", StringType)
+            dtIndustry.Columns.Add("FacilityCol", StringType)
+            dtIndustry.Columns.Add("InstallerCol", StringType)
+            dtIndustry.Columns.Add("InstallDateCol", DateType)
+            dtIndustry.Columns.Add("EndDateCol", DateType)
+            dtIndustry.Columns.Add("CharCorpCol", StringType)
 
-        'Dim lookup As New EveAI.Live.Generic.CharacterNameLookupApi()
-        'Dim sCorpName As String = api.GetCharacterSheet.CorporationName
+            dtIndustry.TableName = "IndustryJobs"
 
-        'If listCharIndustryJobs IsNot Nothing Then
-        '    For Each objEntry In listCharIndustryJobs.Result.Jobs
-        '        If Not lookup.CharacterIDsToLookup.Contains(objEntry.InstallerId) Then
-        '            lookup.CharacterIDsToLookup.Add(objEntry.InstallerId)
-        '        End If
-        '    Next
-        'End If
+            'Dim lookup As New EveAI.Live.Generic.CharacterNameLookupApi()
+            'Dim sCorpName As String = api.GetCharacterSheet.CorporationName
 
-        'If listCorpIndustryJobs IsNot Nothing Then
-        '    For Each objEntry In listCorpIndustryJobs
-        '        If Not lookup.CharacterIDsToLookup.Contains(objEntry.InstallerID) Then
-        '            lookup.CharacterIDsToLookup.Add(objEntry.InstallerID)
-        '        End If
-        '    Next
-        'End If
+            'If listCharIndustryJobs IsNot Nothing Then
+            '    For Each objEntry In listCharIndustryJobs.Result.Jobs
+            '        If Not lookup.CharacterIDsToLookup.Contains(objEntry.InstallerId) Then
+            '            lookup.CharacterIDsToLookup.Add(objEntry.InstallerId)
+            '        End If
+            '    Next
+            'End If
 
-        'lookup.UpdateData()
+            'If listCorpIndustryJobs IsNot Nothing Then
+            '    For Each objEntry In listCorpIndustryJobs
+            '        If Not lookup.CharacterIDsToLookup.Contains(objEntry.InstallerID) Then
+            '            lookup.CharacterIDsToLookup.Add(objEntry.InstallerID)
+            '        End If
+            '    Next
+            'End If
 
-        If listCharIndustryJobs.Result.Jobs IsNot Nothing Then
+            'lookup.UpdateData()
 
-            For Each objEntry In listCharIndustryJobs.Result.Jobs
-                drEntry = dtIndustry.NewRow
+            If Not corporation Is Nothing Then
+                listCorpFacilities = Await corporation.GetFacilitiesAsync()
+            End If
 
-                drEntry("StateCol") = CType(objEntry.Status, JobStatus).ToString
+            Debug.Print(listCorpFacilities.Result.FacilityEntries(0).ToString())
 
-                If Now < objEntry.EndDate.ToLocalTime Then
-                    spanRemaining = objEntry.EndDate.ToLocalTime - Now
-                Else
-                    spanRemaining = TimeSpan.Zero
-                End If
 
-                drEntry("ActivityCol") = ActivityIDLookup(objEntry.ActivityId)
-                drEntry("TypeCol") = objEntry.ProductTypeName
-                drEntry("LocationCol") = objEntry.SolarSystemName
-                drEntry("JumpsCol") = 0 'objEntry.InstallLocation.ContainerLocation.Jumps
-                drEntry("InstallerCol") = objEntry.InstallerName
-                drEntry("OwnerCol") = drEntry("InstallerCol")
-                drEntry("InstallDateCol") = objEntry.StartDate.ToLocalTime
-                drEntry("EndDateCol") = objEntry.EndDate.ToLocalTime
-                drEntry("TimeRemainingCol") = fGetTimeString(spanRemaining)
+            If listCharIndustryJobs.Result.Jobs IsNot Nothing Then
 
-                dtIndustry.Rows.Add(drEntry)
+                For Each objEntry In listCharIndustryJobs.Result.Jobs
+                    drEntry = dtIndustry.NewRow
 
-            Next
-        End If
+                    If fGetStatus(Integer.Parse(objEntry.Status)).Equals("Ready") Then
+                        drEntry("StatusCol") = "Deliver"
+                        drEntry("TimeRemainingCol") = 0
+                    ElseIf fGetStatus(Integer.Parse(objEntry.Status)).Equals("Active") Then
+                        spanRemaining = (objEntry.EndDate.ToLocalTime - Now)
+                        If spanRemaining.TotalSeconds < 0 Then
+                            drEntry("StatusCol") = "Deliver"
+                            drEntry("TimeRemainingCol") = 0
+                        Else
+                            If spanRemaining.Days > 0 Then
+                                'sRemainingTime = spanRemaining.Days & "D "
+                                sRemainingTime = spanRemaining.ToString("d\D\ hh\:mm\:ss")
+                            Else
+                                'sRemainingTime += spanRemaining.Hours.ToString("HH") & ":" & spanRemaining.Minutes.ToString("mm") & ":" & spanRemaining.Seconds.ToString("ss")
+                                sRemainingTime = spanRemaining.ToString("hh\:mm\:ss")
+                            End If
+                            drEntry("StatusCol") = sRemainingTime
+                            drEntry("TimeRemainingCol") = CInt(spanRemaining.TotalSeconds)
+                        End If
+                    Else
+                        drEntry("StatusCol") = fGetStatus(Integer.Parse(objEntry.Status))
+                        drEntry("TimeRemainingCol") = Integer.MaxValue
+                    End If
 
-        If listCorpIndustryJobs.Result.Jobs IsNot Nothing Then
+                    drEntry("JobRunsCol") = "x " & objEntry.Runs.ToString
+                    drEntry("ActivityCol") = ActivityIDLookup(objEntry.ActivityId)
+                    drEntry("BlueprintCol") = objEntry.BueprintTypeName
+                    drEntry("FacilityCol") = objEntry.SolarSystemName & " - " & fGetFacility(objEntry.FacilityId)
+                    drEntry("InstallerCol") = objEntry.InstallerName
+                    drEntry("InstallDateCol") = objEntry.StartDate.ToLocalTime
+                    drEntry("EndDateCol") = objEntry.EndDate.ToLocalTime
+                    drEntry("CharCorpCol") = "Char"
 
-            For Each objEntry In listCorpIndustryJobs.Result.Jobs
-                drEntry = dtIndustry.NewRow
 
-                drEntry("StateCol") = CType(objEntry.Status, JobStatus).ToString
+                    dtIndustry.Rows.Add(drEntry)
 
-                If Now < objEntry.EndDate.ToLocalTime Then
-                    spanRemaining = objEntry.EndDate.ToLocalTime - Now
-                Else
-                    spanRemaining = TimeSpan.Zero
-                End If
+                Next
+            End If
 
-                drEntry("ActivityCol") = ActivityIDLookup(objEntry.ActivityId)
-                drEntry("TypeCol") = objEntry.ProductTypeName
-                drEntry("LocationCol") = objEntry.SolarSystemName
-                drEntry("JumpsCol") = 0 'objEntry.InstallLocation.ContainerLocation.Jumps
-                drEntry("InstallerCol") = objEntry.InstallerName
-                drEntry("OwnerCol") = character.CorporationName
-                drEntry("InstallDateCol") = objEntry.StartDate.ToLocalTime
-                drEntry("EndDateCol") = objEntry.EndDate.ToLocalTime
-                drEntry("TimeRemainingCol") = fGetTimeString(spanRemaining)
+            If listCorpIndustryJobs.Result.Jobs IsNot Nothing Then
 
-                dtIndustry.Rows.Add(drEntry)
+                For Each objEntry In listCorpIndustryJobs.Result.Jobs
+                    drEntry = dtIndustry.NewRow
 
-            Next
-        End If
+                    If fGetStatus(Integer.Parse(objEntry.Status)).Equals("Ready") Then
+                        drEntry("StatusCol") = "Deliver"
+                        drEntry("TimeRemainingCol") = 0
+                    ElseIf fGetStatus(Integer.Parse(objEntry.Status)).Equals("Active") Then
+                        spanRemaining = (objEntry.EndDate.ToLocalTime - Now)
+                        If spanRemaining.TotalSeconds < 0 Then
+                            drEntry("StatusCol") = "Deliver"
+                            drEntry("TimeRemainingCol") = 0
+                        Else
+                            If spanRemaining.Days > 0 Then
+                                'sRemainingTime = spanRemaining.Days & "D "
+                                sRemainingTime = spanRemaining.ToString("d\D\ hh\:mm\:ss")
+                            Else
+                                'sRemainingTime += spanRemaining.Hours.ToString("HH") & ":" & spanRemaining.Minutes.ToString("mm") & ":" & spanRemaining.Seconds.ToString("ss")
+                                sRemainingTime = spanRemaining.ToString("hh\:mm\:ss")
+                            End If
+                            drEntry("StatusCol") = sRemainingTime
+                            drEntry("TimeRemainingCol") = CInt(spanRemaining.TotalSeconds)
+                        End If
+                    Else
+                        drEntry("StatusCol") = fGetStatus(Integer.Parse(objEntry.Status))
+                        drEntry("TimeRemainingCol") = Integer.MaxValue
+                    End If
 
-        dsIndustry.Tables.Add(dtIndustry)
+                    drEntry("JobRunsCol") = "x " & objEntry.Runs.ToString
+                    drEntry("ActivityCol") = ActivityIDLookup(objEntry.ActivityId)
+                    drEntry("BlueprintCol") = objEntry.BueprintTypeName
+                    drEntry("FacilityCol") = objEntry.SolarSystemName & " - " & fGetFacility(objEntry.FacilityId)
+                    drEntry("InstallerCol") = objEntry.InstallerName
+                    drEntry("InstallDateCol") = objEntry.StartDate.ToLocalTime
+                    drEntry("EndDateCol") = objEntry.EndDate.ToLocalTime
+                    drEntry("CharCorpCol") = "Corp"
 
-        bsIndustry = New BindingSource
+                    dtIndustry.Rows.Add(drEntry)
 
-        bsIndustry.DataSource = dsIndustry
-        bsIndustry.DataMember = dsIndustry.Tables(0).TableName
+                Next
+            End If
 
-        dgvIndustry.DataSource = bsIndustry
+            dsIndustry.Tables.Add(dtIndustry)
 
-        dgvIndustry.Visible = True
+            bsIndustry = New BindingSource
 
-        dgvIndustry.Sort(dgvIndustry.Columns("InstallDateCol"), System.ComponentModel.ListSortDirection.Descending)
+            bsIndustry.DataSource = dsIndustry
+            bsIndustry.DataMember = dsIndustry.Tables(0).TableName
 
-        dgvIndustry.Columns("InstallDateCol").DefaultCellStyle.Format = "yyyy.MM.dd HH:mm"
-        dgvIndustry.Columns("EndDateCol").DefaultCellStyle.Format = "yyyy.MM.dd HH:mm"
+            dgvIndustry.DataSource = bsIndustry
 
-        dgvIndustry.Columns("StateCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-        dgvIndustry.Columns("ActivityCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-        dgvIndustry.Columns("TypeCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-        dgvIndustry.Columns("LocationCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-        dgvIndustry.Columns("JumpsCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-        dgvIndustry.Columns("InstallerCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-        dgvIndustry.Columns("OwnerCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-        dgvIndustry.Columns("InstallDateCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-        dgvIndustry.Columns("EndDateCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-        dgvIndustry.Columns("TimeRemainingCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvIndustry.Visible = True
 
-        dgvIndustry.Columns("StateCol").Width = 100
-        dgvIndustry.Columns("ActivityCol").Width = 125
-        dgvIndustry.Columns("TypeCol").Width = 200
-        dgvIndustry.Columns("JumpsCol").Width = 50
-        dgvIndustry.Columns("LocationCol").Width = 250
-        dgvIndustry.Columns("InstallerCol").Width = 150
-        dgvIndustry.Columns("OwnerCol").Width = 150
-        dgvIndustry.Columns("InstallDateCol").Width = 100
-        dgvIndustry.Columns("EndDateCol").Width = 100
-        dgvIndustry.Columns("TimeRemainingCol").Width = 200
+            'dgvIndustry.Sort(dgvIndustry.Columns("InstallDateCol"), System.ComponentModel.ListSortDirection.Descending)
 
-        dgvIndustry.Columns("StateCol").HeaderText = "State"
-        dgvIndustry.Columns("ActivityCol").HeaderText = "Activity"
-        dgvIndustry.Columns("TypeCol").HeaderText = "Type"
-        dgvIndustry.Columns("LocationCol").HeaderText = "Location"
-        dgvIndustry.Columns("JumpsCol").HeaderText = "Jumps"
-        dgvIndustry.Columns("InstallerCol").HeaderText = "Installer"
-        dgvIndustry.Columns("OwnerCol").HeaderText = "Owner"
-        dgvIndustry.Columns("InstallDateCol").HeaderText = "Install Date"
-        dgvIndustry.Columns("EndDateCol").HeaderText = "End Date"
-        dgvIndustry.Columns("TimeRemainingCol").HeaderText = "Remaining"
+            bsIndustry.Sort = "TimeRemainingCol ASC, InstallDateCol DESC"
+
+            dgvIndustry.Columns("InstallDateCol").DefaultCellStyle.Format = "yyyy.MM.dd HH:mm"
+            dgvIndustry.Columns("EndDateCol").DefaultCellStyle.Format = "yyyy.MM.dd HH:mm"
+
+            dgvIndustry.Columns("StatusCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvIndustry.Columns("JobRunsCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvIndustry.Columns("ActivityCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvIndustry.Columns("BlueprintCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvIndustry.Columns("FacilityCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvIndustry.Columns("InstallerCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvIndustry.Columns("InstallDateCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvIndustry.Columns("EndDateCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            'dgvIndustry.Columns("TimeRemainingCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+
+            dgvIndustry.Columns("StatusCol").Width = 75
+            dgvIndustry.Columns("JobRunsCol").Width = 70
+            dgvIndustry.Columns("ActivityCol").Width = 125
+            dgvIndustry.Columns("BlueprintCol").Width = 250
+            dgvIndustry.Columns("FacilityCol").Width = 250
+            dgvIndustry.Columns("InstallerCol").Width = 150
+            dgvIndustry.Columns("InstallDateCol").Width = 100
+            dgvIndustry.Columns("EndDateCol").Width = 100
+            'dgvIndustry.Columns("TimeRemainingCol").Width = 200
+
+            dgvIndustry.Columns("StatusCol").HeaderText = "Status"
+            dgvIndustry.Columns("JobRunsCol").HeaderText = "Job runs"
+            dgvIndustry.Columns("ActivityCol").HeaderText = "Activity"
+            dgvIndustry.Columns("BlueprintCol").HeaderText = "Blueprint"
+            dgvIndustry.Columns("FacilityCol").HeaderText = "Facility"
+            dgvIndustry.Columns("InstallerCol").HeaderText = "Installer"
+            dgvIndustry.Columns("InstallDateCol").HeaderText = "Install Date"
+            dgvIndustry.Columns("EndDateCol").HeaderText = "End Date"
+            'dgvIndustry.Columns("TimeRemainingCol").HeaderText = "Remaining"
+
+            dgvIndustry.Columns("TimeRemainingCol").Visible = False
+            dgvIndustry.Columns("CharCorpCol").Visible = False
+
+        Catch ex As Exception
+            MessageBox.Show(ex.Message)
+        End Try
 
     End Function
 
@@ -1373,31 +1422,41 @@ Public Class frmMain
 
     End Sub
 
-    'Private Sub dgvIndustry_CellFormatting(ByVal sender As Object, ByVal e As System.Windows.Forms.DataGridViewCellFormattingEventArgs) Handles dgvIndustry.CellFormatting
+    Private Sub dgvIndustry_CellFormatting(ByVal sender As Object, ByVal e As System.Windows.Forms.DataGridViewCellFormattingEventArgs) Handles dgvIndustry.CellFormatting
 
-    '    If e.RowIndex < 0 Then
-    '        Exit Sub
-    '    End If
+        If e.RowIndex < 0 Then
+            Exit Sub
+        End If
 
-    '    If dgvIndustry.Columns(e.ColumnIndex).Name = "StateCol" Then
-    '        If dgvIndustry.Rows(e.RowIndex).Cells("StateCol").Value.ToString = "Ready" Then
-    '            e.CellStyle.ForeColor = Color.Green
-    '        ElseIf dgvIndustry.Rows(e.RowIndex).Cells("StateCol").Value.ToString = "In Progress" Then
-    '            e.CellStyle.ForeColor = Color.Gold
-    '        ElseIf dgvIndustry.Rows(e.RowIndex).Cells("StateCol").Value.ToString = "Pending" Then
-    '            e.CellStyle.ForeColor = Color.Red
-    '        End If
-    '    End If
+        If dgvIndustry.Columns(e.ColumnIndex).Name = "StatusCol" Then
+            If dgvIndustry.Rows(e.RowIndex).Cells("StatusCol").Value.ToString = "Deliver" Then
+                e.CellStyle.BackColor = Color.LightGray
+                e.CellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+            ElseIf dgvIndustry.Rows(e.RowIndex).Cells("StatusCol").Value.ToString.Contains(":") Then
+                If dgvIndustry.Rows(e.RowIndex).Cells("ActivityCol").Value.ToString.Equals("Manufacturing") Then
+                    e.CellStyle.ForeColor = Color.DarkGoldenrod
+                Else
+                    e.CellStyle.ForeColor = Color.DarkBlue
+                End If
+                e.CellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+            ElseIf dgvIndustry.Rows(e.RowIndex).Cells("StatusCol").Value.ToString = "Failed" Then
+                e.CellStyle.ForeColor = Color.Red
+                e.CellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+            ElseIf dgvIndustry.Rows(e.RowIndex).Cells("StatusCol").Value.ToString = "Delivered" Then
+                e.CellStyle.ForeColor = Color.Green
+                e.CellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+            End If
+        End If
 
-    '    If dgvIndustry.Columns(e.ColumnIndex).Name = "ActivityCol" Then
-    '        If dgvIndustry.Rows(e.RowIndex).Cells("ActivityCol").Value.ToString = Product.Activity.ResearchMaterialProductivity.ToString Then
-    '            e.Value = "Material Research"
-    '        ElseIf dgvIndustry.Rows(e.RowIndex).Cells("ActivityCol").Value.ToString = Product.Activity.ResearchTimeProductivity.ToString Then
-    '            e.Value = "Time Efficiency Research"
-    '        End If
-    '    End If
+            'If dgvIndustry.Columns(e.ColumnIndex).Name = "ActivityCol" Then
+            '    If dgvIndustry.Rows(e.RowIndex).Cells("ActivityCol").Value.ToString = Product.Activity.ResearchMaterialProductivity.ToString Then
+            '        e.Value = "Material Research"
+            '    ElseIf dgvIndustry.Rows(e.RowIndex).Cells("ActivityCol").Value.ToString = Product.Activity.ResearchTimeProductivity.ToString Then
+            '        e.Value = "Time Efficiency Research"
+            '    End If
+            'End If
 
-    'End Sub
+    End Sub
 
     Private Sub cbActiveOrdersOnly_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cbActiveOrdersOnly.CheckedChanged
 
@@ -1446,9 +1505,14 @@ Public Class frmMain
     End Sub
 
 
-    Private Sub chkMeOnly_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles chkMeOnly.CheckedChanged
-        If chkMeOnly.Checked = True Then
-            bsIndustry.Filter = "InstallerCol = '" & sCharacterName & "'"
+    Private Sub chkActiveOnly_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles chkActiveOnly.CheckedChanged
+        If chkActiveOnly.Checked = True Then
+            'bsIndustry.Filter = "StatusCol <> '" & fGetStatus(JobStatus.Cancelled) & "' AND " & _
+            '                    "StatusCol <> '" & fGetStatus(JobStatus.Delivered) & "' AND " & _
+            '                    "StatusCol <> '" & fGetStatus(JobStatus.Failed) & "' AND " & _
+            '                    "StatusCol <> '" & fGetStatus(JobStatus.Paused) & "' AND " & _
+            '                    "StatusCol <> '" & fGetStatus(JobStatus.Reverted) & "'"
+            bsIndustry.Filter = "TimeRemainingCol < " & Integer.MaxValue
         Else
             bsIndustry.Filter = ""
         End If
@@ -1778,6 +1842,40 @@ Public Class frmMain
             Case Else
                 Return "Unknown"
         End Select
+
+    End Function
+
+    Private Function fGetStatus(argStatus As Integer) As String
+        Select Case argStatus
+            Case JobStatus.Active
+                Return JobStatus.Active.ToString
+            Case JobStatus.Paused
+                Return JobStatus.Paused.ToString
+            Case JobStatus.Ready
+                Return JobStatus.Ready.ToString
+            Case JobStatus.Cancelled
+                Return JobStatus.Cancelled.ToString
+            Case JobStatus.Reverted
+                Return JobStatus.Reverted.ToString
+            Case JobStatus.Delivered
+                Return JobStatus.Delivered.ToString
+            Case JobStatus.Failed
+                Return JobStatus.Failed.ToString
+            Case Else
+                Return "Unknown"
+        End Select
+    End Function
+
+
+    Private Function fGetFacility(argFacility As Long) As String
+
+        For Each objFacility As Models.Corporation.Facilities.Facility In listCorpFacilities.Result.FacilityEntries
+            If objFacility.FacilityId = argFacility Then
+                Return EVEItem.Find(objFacility.TypeId).TypeName
+            End If
+        Next
+
+        Return NameLookup(argFacility)
 
     End Function
 
