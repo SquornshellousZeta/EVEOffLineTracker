@@ -42,6 +42,8 @@ Public Class frmMain
     Private listCharIndustryJobs As Models.EveApiResponse(Of Models.Character.IndustryJobs)
     Private listCorpIndustryJobs As Models.EveApiResponse(Of Models.Character.IndustryJobs)
     'Private listNotifications As List(Of Character.Notification)
+    Private listCharBlueprints As Models.EveApiResponse(Of Models.Character.BlueprintList)
+    Private listCorpBlueprints As Models.EveApiResponse(Of Models.Character.BlueprintList)
 
     Private listCorpFacilities As Models.EveApiResponse(Of Models.Corporation.Facilities)
 
@@ -61,9 +63,9 @@ Public Class frmMain
     Private dtTransactions As DataTable
     Private bsTransactions As BindingSource
 
-    Private dsNotifications As DataSet
-    Private dtNotifications As DataTable
-    Private bsNotifications As BindingSource
+    Private dsBlueprints As DataSet
+    Private dtBlueprints As DataTable
+    Private bsBlueprints As BindingSource
 
     Private dsIndustry As DataSet
     Private dtIndustry As DataTable
@@ -264,21 +266,22 @@ Public Class frmMain
             sListOfErrors += "Failed to get Industry Job data" + vbLf
         End Try
 
-        'Try
+        Try
 
-        '    frm.lblText.Text = "Loading Notifications..."
-        '    Application.DoEvents()
-        '    listNotifications = api.GetCharacterNotifications
-        '    isApiOk("GetCharacterNotifications", api.LastErrors)
-        '    Me.tsslNotifications.Text = "Cached Until: " & api.LastQueryCachedUntil.ToLongDateString & " " & _
-        '                                    api.LastQueryCachedUntil.ToLongTimeString
+            UpdateStatus(frm, "Loading Blueprints...")
+            listCharBlueprints = Await character.GetBlueprintsAsync()
 
-        '    fLoadNotifications()
-        'Catch ex As Exception
-        '    sListOfErrors += "Failed to get Notification data" + vbLf
-        'End Try
+            If corporation IsNot Nothing Then
+                listCorpBlueprints = Await corporation.GetBlueprintsAsync()
+            End If
 
-        'api.LastQueryCachedUntil.ToLongTimeString()
+            Me.tsslNotifications.Text = "Cached Until: " & listCharBlueprints.CachedUntilAsString
+
+            Await fLoadBlueprints()
+
+        Catch ex As Exception
+            sListOfErrors += "Failed to get Blueprint data" + vbLf
+        End Try
 
         frm.Close()
 
@@ -1266,90 +1269,103 @@ Public Class frmMain
 
     End Function
 
-    'Private Sub fLoadNotifications()
 
-    '    Dim objNotification As Character.Notification
-    '    Dim drNotification As DataRow
+    Private Async Function fLoadBlueprints() As task
 
-    '    Dim StringType As System.Type = Type.GetType("System.String")
-    '    Dim DateType As System.Type = Type.GetType("System.DateTime")
-    '    Dim BooleanType As System.Type = Type.GetType("System.Boolean")
+        Dim objBlueprint As Models.Character.BlueprintList.Blueprint
+        Dim drBlueprint As DataRow
 
-    '    Dim sName As String
-    '    Dim objAgent As EveAI.Npc.Agent
-    '    Dim objCorp As EveAI.Npc.NpcCorporation
+        Dim StringType As System.Type = Type.GetType("System.String")
+        Dim DateType As System.Type = Type.GetType("System.DateTime")
+        Dim BooleanType As System.Type = Type.GetType("System.Boolean")
+        Try
 
-    '    dsNotifications = New DataSet
-    '    dtNotifications = New DataTable
+            dsBlueprints = New DataSet
+            dtBlueprints = New DataTable
 
-    '    dtNotifications.Columns.Add("ReadCol", BooleanType)
-    '    dtNotifications.Columns.Add("SenderCol", StringType)
-    '    dtNotifications.Columns.Add("SubjectCol", StringType)
-    '    dtNotifications.Columns.Add("ReceivedTimeCol", DateType)
+            dtBlueprints.Columns.Add("BlueprintCol", StringType)
+            dtBlueprints.Columns.Add("MECol", StringType)
+            dtBlueprints.Columns.Add("TECol", StringType)
+            dtBlueprints.Columns.Add("RunsRemainingCol", StringType)
+            dtBlueprints.Columns.Add("LocationCol", StringType)
 
-    '    dtNotifications.TableName = "Notifications"
+            dtBlueprints.TableName = "Blueprints"
 
-    '    For Each objNotification In listNotifications
-    '        drNotification = dtNotifications.NewRow
+            For Each objBlueprint In listCharBlueprints.Result.Blueprints
+                drBlueprint = dtBlueprints.NewRow
 
-    '        objAgent = api.EveApiCore.FindAgent(CInt(objNotification.SenderID))
-    '        If objAgent Is Nothing Then
-    '            objCorp = api.EveApiCore.FindNpcCorporation(CInt(objNotification.SenderID))
-    '            If objCorp Is Nothing Then
-    '                If objNotification.SenderID = 2 Then
-    '                    sName = "EVE Central Bank"
-    '                Else
-    '                    sName = "Unknown"
-    '                End If
-    '            Else
-    '                sName = objCorp.Name
-    '            End If
-    '        Else
-    '            sName = objAgent.Name
-    '        End If
+                drBlueprint("BlueprintCol") = objBlueprint.TypeName
+                drBlueprint("MECol") = objBlueprint.MaterialEfficiency.ToString & "%"
+                drBlueprint("TECol") = objBlueprint.TimeEfficienty.ToString & "%"
+                If objBlueprint.Runs = -1 Then
+                    drBlueprint("RunsRemainingCol") = Chr(165)
+                Else
+                    drBlueprint("RunsRemainingCol") = objBlueprint.Runs.ToString
 
-    '        drNotification("ReadCol") = objNotification.IsRead
-    '        drNotification("SenderCol") = sName
-    '        drNotification("SubjectCol") = objNotification.Type.ToString
-    '        drNotification("ReceivedTimeCol") = objNotification.SentDateLocalTime
-    '        dtNotifications.Rows.Add(drNotification)
-    '    Next
+                End If
+                drBlueprint("LocationCol") = fGetFacility(objBlueprint.LocationId)
 
-    '    dsNotifications.Tables.Add(dtNotifications)
+                dtBlueprints.Rows.Add(drBlueprint)
+            Next
 
-    '    bsNotifications = New BindingSource
+            For Each objBlueprint In listCorpBlueprints.Result.Blueprints
+                drBlueprint = dtBlueprints.NewRow
 
-    '    bsNotifications.DataSource = dsNotifications
-    '    bsNotifications.DataMember = dsNotifications.Tables(0).TableName
+                drBlueprint("BlueprintCol") = objBlueprint.TypeName
+                drBlueprint("MECol") = objBlueprint.MaterialEfficiency.ToString & "%"
+                drBlueprint("TECol") = objBlueprint.TimeEfficienty.ToString & "%"
+                If objBlueprint.Runs = -1 Then
+                    drBlueprint("RunsRemainingCol") = Chr(165)
+                Else
+                    drBlueprint("RunsRemainingCol") = objBlueprint.Runs.ToString
 
-    '    dgvNotifications.DataSource = bsNotifications
+                End If
+                drBlueprint("LocationCol") = fGetFacility(objBlueprint.LocationId)
 
-    '    dgvNotifications.Visible = True
+                dtBlueprints.Rows.Add(drBlueprint)
+            Next
 
-    '    dgvNotifications.Sort(dgvNotifications.Columns("ReceivedTimeCol"), System.ComponentModel.ListSortDirection.Descending)
+            dsBlueprints.Tables.Add(dtBlueprints)
 
-    '    dgvNotifications.Columns("ReadCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
-    '    dgvNotifications.Columns("SenderCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft
-    '    dgvNotifications.Columns("SubjectCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft
-    '    dgvNotifications.Columns("ReceivedTimeCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft
+            bsBlueprints = New BindingSource
 
-    '    dgvNotifications.Columns("ReceivedTimeCol").DefaultCellStyle.Format = "yyyy.MM.dd HH:mm"
+            bsBlueprints.DataSource = dsBlueprints
+            bsBlueprints.DataMember = dsBlueprints.Tables(0).TableName
 
-    '    dgvNotifications.Columns("ReadCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvNotifications.Columns("SenderCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-    '    dgvNotifications.Columns("SubjectCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
-    '    dgvNotifications.Columns("ReceivedTimeCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvBlueprints.DataSource = bsBlueprints
 
-    '    dgvNotifications.Columns("ReadCol").Width = 50
-    '    dgvNotifications.Columns("SenderCol").Width = 150
-    '    dgvNotifications.Columns("ReceivedTimeCol").Width = 125
+            dgvBlueprints.Visible = True
 
-    '    dgvNotifications.Columns("ReadCol").HeaderText = "Read?"
-    '    dgvNotifications.Columns("SenderCol").HeaderText = "Sender"
-    '    dgvNotifications.Columns("SubjectCol").HeaderText = "Subject"
-    '    dgvNotifications.Columns("ReceivedTimeCol").HeaderText = "Received"
+            dgvBlueprints.Sort(dgvBlueprints.Columns("BlueprintCol"), System.ComponentModel.ListSortDirection.Ascending)
 
-    'End Sub
+            dgvBlueprints.Columns("BlueprintCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft
+            dgvBlueprints.Columns("MECol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+            dgvBlueprints.Columns("TECol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+            dgvBlueprints.Columns("RunsRemainingCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft
+            dgvBlueprints.Columns("LocationCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft
+
+            dgvBlueprints.Columns("BlueprintCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvBlueprints.Columns("MECol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvBlueprints.Columns("TECol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvBlueprints.Columns("RunsRemainingCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvBlueprints.Columns("LocationCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+
+            dgvBlueprints.Columns("BlueprintCol").Width = 100
+            dgvBlueprints.Columns("MECol").Width = 100
+            dgvBlueprints.Columns("TECol").Width = 100
+            dgvBlueprints.Columns("RunsRemainingCol").Width = 100
+            dgvBlueprints.Columns("LocationCol").Width = 100
+
+            dgvBlueprints.Columns("BlueprintCol").HeaderText = "Blueprint?"
+            dgvBlueprints.Columns("MECol").HeaderText = "Material Efficiency"
+            dgvBlueprints.Columns("TECol").HeaderText = "Time Efficiently"
+            dgvBlueprints.Columns("RunsRemainingCol").HeaderText = "Runs remaining"
+            dgvBlueprints.Columns("LocationCol").HeaderText = "Location"
+        Catch ex As Exception
+            MessageBox.Show(ex.Message)
+        End Try
+
+    End Function
 
 
     Private Async Sub btnRefresh_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnRefresh.Click

@@ -117,11 +117,11 @@ Partial Class frmMain
         Me.ssIndustry = New System.Windows.Forms.StatusStrip()
         Me.tsslIndustry = New System.Windows.Forms.ToolStripStatusLabel()
         Me.ToolStripStatusLabel8 = New System.Windows.Forms.ToolStripStatusLabel()
-        Me.tabNotifications = New System.Windows.Forms.TabPage()
+        Me.tabBlueprints = New System.Windows.Forms.TabPage()
         Me.ssNotifications = New System.Windows.Forms.StatusStrip()
         Me.tsslNotifications = New System.Windows.Forms.ToolStripStatusLabel()
         Me.ToolStripStatusLabel6 = New System.Windows.Forms.ToolStripStatusLabel()
-        Me.dgvNotifications = New System.Windows.Forms.DataGridView()
+        Me.dgvBlueprints = New System.Windows.Forms.DataGridView()
         Me.btnRefresh = New System.Windows.Forms.Button()
         Me.Timer1 = New System.Windows.Forms.Timer(Me.components)
         Me.MenuStrip1.SuspendLayout()
@@ -151,9 +151,9 @@ Partial Class frmMain
         Me.tabIndustry.SuspendLayout()
         CType(Me.dgvIndustry, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.ssIndustry.SuspendLayout()
-        Me.tabNotifications.SuspendLayout()
+        Me.tabBlueprints.SuspendLayout()
         Me.ssNotifications.SuspendLayout()
-        CType(Me.dgvNotifications, System.ComponentModel.ISupportInitialize).BeginInit()
+        CType(Me.dgvBlueprints, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SuspendLayout()
         '
         'MenuStrip1
@@ -215,7 +215,7 @@ Partial Class frmMain
         Me.TabControl1.Controls.Add(Me.tabOrders)
         Me.TabControl1.Controls.Add(Me.tabTransactions)
         Me.TabControl1.Controls.Add(Me.tabIndustry)
-        Me.TabControl1.Controls.Add(Me.tabNotifications)
+        Me.TabControl1.Controls.Add(Me.tabBlueprints)
         Me.TabControl1.Location = New System.Drawing.Point(0, 24)
         Me.TabControl1.Name = "TabControl1"
         Me.TabControl1.SelectedIndex = 0
@@ -1074,17 +1074,17 @@ Partial Class frmMain
         Me.ToolStripStatusLabel8.Name = "ToolStripStatusLabel8"
         Me.ToolStripStatusLabel8.Size = New System.Drawing.Size(0, 17)
         '
-        'tabNotifications
+        'tabBlueprints
         '
-        Me.tabNotifications.Controls.Add(Me.ssNotifications)
-        Me.tabNotifications.Controls.Add(Me.dgvNotifications)
-        Me.tabNotifications.Location = New System.Drawing.Point(4, 22)
-        Me.tabNotifications.Name = "tabNotifications"
-        Me.tabNotifications.Padding = New System.Windows.Forms.Padding(3)
-        Me.tabNotifications.Size = New System.Drawing.Size(817, 500)
-        Me.tabNotifications.TabIndex = 6
-        Me.tabNotifications.Text = "Notifications"
-        Me.tabNotifications.UseVisualStyleBackColor = True
+        Me.tabBlueprints.Controls.Add(Me.ssNotifications)
+        Me.tabBlueprints.Controls.Add(Me.dgvBlueprints)
+        Me.tabBlueprints.Location = New System.Drawing.Point(4, 22)
+        Me.tabBlueprints.Name = "tabBlueprints"
+        Me.tabBlueprints.Padding = New System.Windows.Forms.Padding(3)
+        Me.tabBlueprints.Size = New System.Drawing.Size(817, 500)
+        Me.tabBlueprints.TabIndex = 6
+        Me.tabBlueprints.Text = "Blueprints"
+        Me.tabBlueprints.UseVisualStyleBackColor = True
         '
         'ssNotifications
         '
@@ -1106,24 +1106,24 @@ Partial Class frmMain
         Me.ToolStripStatusLabel6.Name = "ToolStripStatusLabel6"
         Me.ToolStripStatusLabel6.Size = New System.Drawing.Size(0, 17)
         '
-        'dgvNotifications
+        'dgvBlueprints
         '
-        Me.dgvNotifications.AllowUserToAddRows = False
-        Me.dgvNotifications.AllowUserToDeleteRows = False
-        Me.dgvNotifications.AllowUserToOrderColumns = True
+        Me.dgvBlueprints.AllowUserToAddRows = False
+        Me.dgvBlueprints.AllowUserToDeleteRows = False
+        Me.dgvBlueprints.AllowUserToOrderColumns = True
         DataGridViewCellStyle7.BackColor = System.Drawing.Color.Azure
-        Me.dgvNotifications.AlternatingRowsDefaultCellStyle = DataGridViewCellStyle7
-        Me.dgvNotifications.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
+        Me.dgvBlueprints.AlternatingRowsDefaultCellStyle = DataGridViewCellStyle7
+        Me.dgvBlueprints.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
             Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.dgvNotifications.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill
-        Me.dgvNotifications.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize
-        Me.dgvNotifications.Location = New System.Drawing.Point(3, 3)
-        Me.dgvNotifications.Name = "dgvNotifications"
-        Me.dgvNotifications.ReadOnly = True
-        Me.dgvNotifications.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect
-        Me.dgvNotifications.Size = New System.Drawing.Size(811, 469)
-        Me.dgvNotifications.TabIndex = 8
+        Me.dgvBlueprints.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill
+        Me.dgvBlueprints.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize
+        Me.dgvBlueprints.Location = New System.Drawing.Point(3, 3)
+        Me.dgvBlueprints.Name = "dgvBlueprints"
+        Me.dgvBlueprints.ReadOnly = True
+        Me.dgvBlueprints.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect
+        Me.dgvBlueprints.Size = New System.Drawing.Size(811, 469)
+        Me.dgvBlueprints.TabIndex = 8
         '
         'btnRefresh
         '
@@ -1196,11 +1196,11 @@ Partial Class frmMain
         CType(Me.dgvIndustry, System.ComponentModel.ISupportInitialize).EndInit()
         Me.ssIndustry.ResumeLayout(False)
         Me.ssIndustry.PerformLayout()
-        Me.tabNotifications.ResumeLayout(False)
-        Me.tabNotifications.PerformLayout()
+        Me.tabBlueprints.ResumeLayout(False)
+        Me.tabBlueprints.PerformLayout()
         Me.ssNotifications.ResumeLayout(False)
         Me.ssNotifications.PerformLayout()
-        CType(Me.dgvNotifications, System.ComponentModel.ISupportInitialize).EndInit()
+        CType(Me.dgvBlueprints, System.ComponentModel.ISupportInitialize).EndInit()
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
@@ -1288,11 +1288,11 @@ Partial Class frmMain
     Friend WithEvents ssIndustry As System.Windows.Forms.StatusStrip
     Friend WithEvents tsslIndustry As System.Windows.Forms.ToolStripStatusLabel
     Friend WithEvents ToolStripStatusLabel8 As System.Windows.Forms.ToolStripStatusLabel
-    Friend WithEvents tabNotifications As System.Windows.Forms.TabPage
+    Friend WithEvents tabBlueprints As System.Windows.Forms.TabPage
     Friend WithEvents ssNotifications As System.Windows.Forms.StatusStrip
     Friend WithEvents tsslNotifications As System.Windows.Forms.ToolStripStatusLabel
     Friend WithEvents ToolStripStatusLabel6 As System.Windows.Forms.ToolStripStatusLabel
-    Friend WithEvents dgvNotifications As System.Windows.Forms.DataGridView
+    Friend WithEvents dgvBlueprints As System.Windows.Forms.DataGridView
     Friend WithEvents chkActiveOnly As System.Windows.Forms.CheckBox
     Friend WithEvents lblNumOrders As System.Windows.Forms.Label
     Friend WithEvents cbActiveOrdersOnly As System.Windows.Forms.CheckBox
