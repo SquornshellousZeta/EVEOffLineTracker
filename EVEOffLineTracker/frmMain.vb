@@ -1276,17 +1276,20 @@ Public Class frmMain
         Dim drBlueprint As DataRow
 
         Dim StringType As System.Type = Type.GetType("System.String")
-        Dim DateType As System.Type = Type.GetType("System.DateTime")
         Dim BooleanType As System.Type = Type.GetType("System.Boolean")
+        Dim IntegerType As System.Type = Type.GetType("System.Int64")
+
         Try
 
             dsBlueprints = New DataSet
             dtBlueprints = New DataTable
 
             dtBlueprints.Columns.Add("BlueprintCol", StringType)
-            dtBlueprints.Columns.Add("MECol", StringType)
+            dtBlueprints.Columns.Add("OriginalCol", BooleanType)
+            dtBlueprints.Columns.Add("MECol", IntegerType)
             dtBlueprints.Columns.Add("TECol", StringType)
             dtBlueprints.Columns.Add("RunsRemainingCol", StringType)
+            dtBlueprints.Columns.Add("CharCorpCol", StringType)
             dtBlueprints.Columns.Add("LocationCol", StringType)
 
             dtBlueprints.TableName = "Blueprints"
@@ -1295,15 +1298,21 @@ Public Class frmMain
                 drBlueprint = dtBlueprints.NewRow
 
                 drBlueprint("BlueprintCol") = objBlueprint.TypeName
-                drBlueprint("MECol") = objBlueprint.MaterialEfficiency.ToString & "%"
-                drBlueprint("TECol") = objBlueprint.TimeEfficienty.ToString & "%"
+                drBlueprint("MECol") = objBlueprint.MaterialEfficiency
+                drBlueprint("TECol") = objBlueprint.TimeEfficiency.ToString & "%"
                 If objBlueprint.Runs = -1 Then
                     drBlueprint("RunsRemainingCol") = Chr(165)
+                    drBlueprint("OriginalCol") = True
                 Else
                     drBlueprint("RunsRemainingCol") = objBlueprint.Runs.ToString
-
+                    drBlueprint("OriginalCol") = False
                 End If
-                drBlueprint("LocationCol") = fGetFacility(objBlueprint.LocationId)
+                If dicAllAssets.ContainsKey(objBlueprint.ItemId) Then
+                    drBlueprint("LocationCol") = dicAllAssets(objBlueprint.ItemId).Location & " - " & dicAllAssets(objBlueprint.ItemId).Container
+                Else
+                    drBlueprint("LocationCol") = "In Process - " & fGetFacility(objBlueprint.LocationId)
+                End If
+                drBlueprint("CharCorpCol") = "Character"
 
                 dtBlueprints.Rows.Add(drBlueprint)
             Next
@@ -1311,16 +1320,26 @@ Public Class frmMain
             For Each objBlueprint In listCorpBlueprints.Result.Blueprints
                 drBlueprint = dtBlueprints.NewRow
 
+                If objBlueprint.TypeName.Equals("Mining Laser Upgrade I Blueprint") Then
+                    Debug.Print("Stop here")
+                End If
+
                 drBlueprint("BlueprintCol") = objBlueprint.TypeName
-                drBlueprint("MECol") = objBlueprint.MaterialEfficiency.ToString & "%"
-                drBlueprint("TECol") = objBlueprint.TimeEfficienty.ToString & "%"
+                drBlueprint("MECol") = objBlueprint.MaterialEfficiency
+                drBlueprint("TECol") = objBlueprint.TimeEfficiency.ToString & "%"
                 If objBlueprint.Runs = -1 Then
                     drBlueprint("RunsRemainingCol") = Chr(165)
+                    drBlueprint("OriginalCol") = True
                 Else
                     drBlueprint("RunsRemainingCol") = objBlueprint.Runs.ToString
-
+                    drBlueprint("OriginalCol") = False
                 End If
-                drBlueprint("LocationCol") = fGetFacility(objBlueprint.LocationId)
+                If dicAllAssets.ContainsKey(objBlueprint.ItemId) Then
+                    drBlueprint("LocationCol") = dicAllAssets(objBlueprint.ItemId).Location & " - " & dicAllAssets(objBlueprint.ItemId).Container
+                Else
+                    drBlueprint("LocationCol") = "In Process - " & fGetFacility(objBlueprint.LocationId)
+                End If
+                drBlueprint("CharCorpCol") = "Corporation"
 
                 dtBlueprints.Rows.Add(drBlueprint)
             Next
@@ -1338,29 +1357,39 @@ Public Class frmMain
 
             dgvBlueprints.Sort(dgvBlueprints.Columns("BlueprintCol"), System.ComponentModel.ListSortDirection.Ascending)
 
+
             dgvBlueprints.Columns("BlueprintCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft
-            dgvBlueprints.Columns("MECol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
-            dgvBlueprints.Columns("TECol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
-            dgvBlueprints.Columns("RunsRemainingCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft
+            dgvBlueprints.Columns("MECol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+            dgvBlueprints.Columns("TECol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+            dgvBlueprints.Columns("RunsRemainingCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
             dgvBlueprints.Columns("LocationCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft
+            dgvBlueprints.Columns("CharCorpCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+            dgvBlueprints.Columns("OriginalCol").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
 
             dgvBlueprints.Columns("BlueprintCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
             dgvBlueprints.Columns("MECol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
             dgvBlueprints.Columns("TECol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
             dgvBlueprints.Columns("RunsRemainingCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
-            dgvBlueprints.Columns("LocationCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvBlueprints.Columns("LocationCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+            dgvBlueprints.Columns("CharCorpCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
+            dgvBlueprints.Columns("OriginalCol").AutoSizeMode = DataGridViewAutoSizeColumnMode.None
 
-            dgvBlueprints.Columns("BlueprintCol").Width = 100
-            dgvBlueprints.Columns("MECol").Width = 100
-            dgvBlueprints.Columns("TECol").Width = 100
-            dgvBlueprints.Columns("RunsRemainingCol").Width = 100
-            dgvBlueprints.Columns("LocationCol").Width = 100
+            dgvBlueprints.Columns("BlueprintCol").Width = 250
+            dgvBlueprints.Columns("MECol").Width = 75
+            dgvBlueprints.Columns("TECol").Width = 75
+            dgvBlueprints.Columns("RunsRemainingCol").Width = 75
+            'dgvBlueprints.Columns("LocationCol").Width = 300
+            dgvBlueprints.Columns("CharCorpCol").Width = 75
+            dgvBlueprints.Columns("OriginalCol").Width = 50
 
-            dgvBlueprints.Columns("BlueprintCol").HeaderText = "Blueprint?"
+            dgvBlueprints.Columns("BlueprintCol").HeaderText = "Blueprint"
             dgvBlueprints.Columns("MECol").HeaderText = "Material Efficiency"
-            dgvBlueprints.Columns("TECol").HeaderText = "Time Efficiently"
+            dgvBlueprints.Columns("TECol").HeaderText = "Time Efficiency"
             dgvBlueprints.Columns("RunsRemainingCol").HeaderText = "Runs remaining"
             dgvBlueprints.Columns("LocationCol").HeaderText = "Location"
+            dgvBlueprints.Columns("CharCorpCol").HeaderText = "Char/Corp"
+            dgvBlueprints.Columns("OriginalCol").HeaderText = "Original?"
+
         Catch ex As Exception
             MessageBox.Show(ex.Message)
         End Try
@@ -1534,6 +1563,25 @@ Public Class frmMain
         End If
 
     End Sub
+
+    Private Sub dgvBlueprints_CellFormatting(ByVal sender As Object, ByVal e As System.Windows.Forms.DataGridViewCellFormattingEventArgs) Handles dgvBlueprints.CellFormatting
+
+        If e.RowIndex < 0 Then
+            Exit Sub
+        End If
+
+        If dgvBlueprints.Columns(e.ColumnIndex).Name = "RunsRemainingCol" Then
+            If CBool(dgvBlueprints.Rows(e.RowIndex).Cells("OriginalCol").Value) = True Then
+                e.CellStyle.Font = New Font("Symbol", 12.0)
+            End If
+        End If
+
+        If dgvBlueprints.Columns(e.ColumnIndex).Name = "MECol" Then
+            e.Value = CStr(e.Value) & "%"
+        End If
+
+    End Sub
+
 
     Private Sub ExitToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ExitToolStripMenuItem.Click
         Me.Close()
@@ -1831,7 +1879,11 @@ Public Class frmMain
         ElseIf iLocationID >= 66014934 And iLocationID < 67999999 Then
             Return dicNames(iLocationID - 6000000).ItemName
         Else
-            Return dicNames(iLocationID).ItemName
+            If dicNames.ContainsKey(iLocationID) Then
+                Return dicNames(iLocationID).ItemName
+            Else
+                Return ""
+            End If
         End If
 
     End Function
