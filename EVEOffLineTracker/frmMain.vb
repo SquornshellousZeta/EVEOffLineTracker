@@ -1263,6 +1263,8 @@ Public Class frmMain
             dgvIndustry.Columns("TimeRemainingCol").Visible = False
             dgvIndustry.Columns("CharCorpCol").Visible = False
 
+            chkActiveOnly.Checked = True
+
         Catch ex As Exception
             MessageBox.Show(ex.Message)
         End Try
@@ -1319,10 +1321,6 @@ Public Class frmMain
 
             For Each objBlueprint In listCorpBlueprints.Result.Blueprints
                 drBlueprint = dtBlueprints.NewRow
-
-                If objBlueprint.TypeName.Equals("Mining Laser Upgrade I Blueprint") Then
-                    Debug.Print("Stop here")
-                End If
 
                 drBlueprint("BlueprintCol") = objBlueprint.TypeName
                 drBlueprint("MECol") = objBlueprint.MaterialEfficiency
