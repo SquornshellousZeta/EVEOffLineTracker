@@ -16,6 +16,9 @@ Public Class frmMain
     Private character As Character
     Private corporation As Corporation
 
+    Private objCharKey As eZet.EveLib.Modules.CharacterKey
+    Private objAccountStatus As Models.EveApiResponse(Of Models.Account.AccountStatus)
+
     Private charSheetResponse As Models.EveApiResponse(Of Models.Character.CharacterSheet)
     Private objSkillsInQueue As Models.Character.SkillQueue
     Private objSkillInTraining As Models.EveApiResponse(Of Models.Character.SkillTraining)
@@ -155,6 +158,7 @@ Public Class frmMain
         objSkillTree = Await objEve.GetSkillTreeAsync()
         objRefTypes = Await objEve.GetReferenceTypesAsync()
 
+
         frm.BringToFront()
         Await MakeMapsAsync()
 
@@ -168,6 +172,8 @@ Public Class frmMain
         UpdateStatus(frm, "Getting API information")
         character = New Character(iKeyID, svCode, lCharacterID)
 
+        objCharKey = New eZet.EveLib.Modules.CharacterKey(iKeyID, svCode)
+ 
         If iCorpKeyID > 0 And sCorpvCode <> "" And lCorpCharacterID > 0 Then
             corporation = New Corporation(iCorpKeyID, sCorpvCode, lCorpCharacterID)
             UpdateStatus(frm, "Getting Corp API information")
@@ -299,6 +305,7 @@ Public Class frmMain
         Dim iIntEnhanced, iMemEnhanced, iPerEnhanced, iWilEnhanced, iChaEnhanced As Integer
         Dim objImage As Image
         Dim sImageFile As String
+        Dim sPaidUntil As String
 
         Try
 
@@ -315,6 +322,14 @@ Public Class frmMain
                 InvokeControl(lblSkillpoints, Sub(x) x.ForeColor = Color.Red)  'Me.lblSkillpoints.ForeColor = Color.Red
             End If
             InvokeControl(lblBalance, Sub(x) x.Text = String.Format("{0:#,#.00 ISK}", charSheet.Balance))  'Me.lblBalance.Text = String.Format("{0:#,#.00 ISK}", charSheet.Balance)
+
+            objAccountStatus = Await objCharKey.GetAccountStatusAsync()
+            sPaidUntil = objAccountStatus.Result.PaidUntil.ToLocalTime.ToShortDateString & " " & objAccountStatus.Result.PaidUntil.ToLocalTime.ToLongTimeString
+            InvokeControl(lblPaidUntil, Sub(x) x.Text = sPaidUntil)
+
+            If objAccountStatus.Result.PaidUntil.ToLocalTime - Now < New TimeSpan(9, 0, 0, 0) Then
+                InvokeControl(lblPaidUntil, Sub(x) x.ForeColor = Color.Red)
+            End If
 
             If (charSheet.AttributeEnhancers.Intelligence IsNot Nothing) Then
                 iIntEnhanced = charSheet.AttributeEnhancers.Intelligence.Value
@@ -390,6 +405,7 @@ Public Class frmMain
             End If
 
             fUpdateSkillTimes(objSkillsInQueue)
+
 
         Catch ex As Exception
             MessageBox.Show(ex.Message)

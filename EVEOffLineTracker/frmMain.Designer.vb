@@ -124,6 +124,8 @@ Partial Class frmMain
         Me.dgvBlueprints = New System.Windows.Forms.DataGridView()
         Me.btnRefresh = New System.Windows.Forms.Button()
         Me.Timer1 = New System.Windows.Forms.Timer(Me.components)
+        Me.Label99 = New System.Windows.Forms.Label()
+        Me.lblPaidUntil = New System.Windows.Forms.Label()
         Me.MenuStrip1.SuspendLayout()
         Me.TabControl1.SuspendLayout()
         Me.tabCharSheet.SuspendLayout()
@@ -224,6 +226,8 @@ Partial Class frmMain
         '
         'tabCharSheet
         '
+        Me.tabCharSheet.Controls.Add(Me.lblPaidUntil)
+        Me.tabCharSheet.Controls.Add(Me.Label99)
         Me.tabCharSheet.Controls.Add(Me.imgAlliance)
         Me.tabCharSheet.Controls.Add(Me.imgCorp)
         Me.tabCharSheet.Controls.Add(Me.picImage)
@@ -1139,6 +1143,26 @@ Partial Class frmMain
         '
         Me.Timer1.Interval = 1000
         '
+        'Label99
+        '
+        Me.Label99.AutoSize = True
+        Me.Label99.Font = New System.Drawing.Font("Arial", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.Label99.Location = New System.Drawing.Point(8, 182)
+        Me.Label99.Name = "Label99"
+        Me.Label99.Size = New System.Drawing.Size(75, 18)
+        Me.Label99.TabIndex = 44
+        Me.Label99.Text = "Paid Until"
+        '
+        'lblPaidUntil
+        '
+        Me.lblPaidUntil.AutoSize = True
+        Me.lblPaidUntil.Font = New System.Drawing.Font("Arial", 12.0!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblPaidUntil.Location = New System.Drawing.Point(137, 182)
+        Me.lblPaidUntil.Name = "lblPaidUntil"
+        Me.lblPaidUntil.Size = New System.Drawing.Size(60, 19)
+        Me.lblPaidUntil.TabIndex = 45
+        Me.lblPaidUntil.Text = "Label2"
+        '
         'frmMain
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -1298,5 +1322,7 @@ Partial Class frmMain
     Friend WithEvents cbActiveOrdersOnly As System.Windows.Forms.CheckBox
     Friend WithEvents imgAlliance As System.Windows.Forms.PictureBox
     Friend WithEvents imgCorp As System.Windows.Forms.PictureBox
+    Friend WithEvents lblPaidUntil As System.Windows.Forms.Label
+    Friend WithEvents Label99 As System.Windows.Forms.Label
 
 End Class
