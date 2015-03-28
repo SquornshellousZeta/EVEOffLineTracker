@@ -58,11 +58,16 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EveLib.Core">
-      <HintPath>..\..\eZet.EveLib\EveLib.Core\bin\Debug\EveLib.Core.dll</HintPath>
+    <Reference Include="EveLib.Core, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\eZet.EveLib\evelib\EveLib.Core\bin\Debug\EveLib.Core.dll</HintPath>
     </Reference>
-    <Reference Include="EveLib.EveOnline">
-      <HintPath>..\..\eZet.EveLib\EveLib.EveOnline\bin\Debug\EveLib.EveOnline.dll</HintPath>
+    <Reference Include="EveLib.EveOnline, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\eZet.EveLib\evelib\EveLib.EveOnline\bin\Debug\EveLib.EveOnline.dll</HintPath>
+    </Reference>
+    <Reference Include="EveLib.StaticData">
+      <HintPath>..\..\eZet.EveLib\evelib\EveLib.EveStaticData\bin\Debug\EveLib.StaticData.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />

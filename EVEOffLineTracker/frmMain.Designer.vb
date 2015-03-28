@@ -40,6 +40,8 @@ Partial Class frmMain
         Me.AboutToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
         Me.TabControl1 = New System.Windows.Forms.TabControl()
         Me.tabCharSheet = New System.Windows.Forms.TabPage()
+        Me.lblPaidUntil = New System.Windows.Forms.Label()
+        Me.Label99 = New System.Windows.Forms.Label()
         Me.imgAlliance = New System.Windows.Forms.PictureBox()
         Me.imgCorp = New System.Windows.Forms.PictureBox()
         Me.picImage = New System.Windows.Forms.PictureBox()
@@ -73,8 +75,6 @@ Partial Class frmMain
         Me.Label8 = New System.Windows.Forms.Label()
         Me.lblBalance = New System.Windows.Forms.Label()
         Me.Label7 = New System.Windows.Forms.Label()
-        Me.lblCloneInfo = New System.Windows.Forms.Label()
-        Me.Label6 = New System.Windows.Forms.Label()
         Me.lblSkillpoints = New System.Windows.Forms.Label()
         Me.Label5 = New System.Windows.Forms.Label()
         Me.lblGender = New System.Windows.Forms.Label()
@@ -124,8 +124,6 @@ Partial Class frmMain
         Me.dgvBlueprints = New System.Windows.Forms.DataGridView()
         Me.btnRefresh = New System.Windows.Forms.Button()
         Me.Timer1 = New System.Windows.Forms.Timer(Me.components)
-        Me.Label99 = New System.Windows.Forms.Label()
-        Me.lblPaidUntil = New System.Windows.Forms.Label()
         Me.MenuStrip1.SuspendLayout()
         Me.TabControl1.SuspendLayout()
         Me.tabCharSheet.SuspendLayout()
@@ -259,8 +257,6 @@ Partial Class frmMain
         Me.tabCharSheet.Controls.Add(Me.Label8)
         Me.tabCharSheet.Controls.Add(Me.lblBalance)
         Me.tabCharSheet.Controls.Add(Me.Label7)
-        Me.tabCharSheet.Controls.Add(Me.lblCloneInfo)
-        Me.tabCharSheet.Controls.Add(Me.Label6)
         Me.tabCharSheet.Controls.Add(Me.lblSkillpoints)
         Me.tabCharSheet.Controls.Add(Me.Label5)
         Me.tabCharSheet.Controls.Add(Me.lblGender)
@@ -278,6 +274,26 @@ Partial Class frmMain
         Me.tabCharSheet.TabIndex = 0
         Me.tabCharSheet.Text = "Character Sheet"
         Me.tabCharSheet.UseVisualStyleBackColor = True
+        '
+        'lblPaidUntil
+        '
+        Me.lblPaidUntil.AutoSize = True
+        Me.lblPaidUntil.Font = New System.Drawing.Font("Arial", 12.0!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblPaidUntil.Location = New System.Drawing.Point(137, 182)
+        Me.lblPaidUntil.Name = "lblPaidUntil"
+        Me.lblPaidUntil.Size = New System.Drawing.Size(60, 19)
+        Me.lblPaidUntil.TabIndex = 45
+        Me.lblPaidUntil.Text = "Label2"
+        '
+        'Label99
+        '
+        Me.Label99.AutoSize = True
+        Me.Label99.Font = New System.Drawing.Font("Arial", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.Label99.Location = New System.Drawing.Point(8, 182)
+        Me.Label99.Name = "Label99"
+        Me.Label99.Size = New System.Drawing.Size(75, 18)
+        Me.Label99.TabIndex = 44
+        Me.Label99.Text = "Paid Until"
         '
         'imgAlliance
         '
@@ -605,26 +621,6 @@ Partial Class frmMain
         Me.Label7.Size = New System.Drawing.Size(111, 18)
         Me.Label7.TabIndex = 13
         Me.Label7.Text = "Wallet Balance"
-        '
-        'lblCloneInfo
-        '
-        Me.lblCloneInfo.AutoSize = True
-        Me.lblCloneInfo.Font = New System.Drawing.Font("Arial", 12.0!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.lblCloneInfo.Location = New System.Drawing.Point(137, 130)
-        Me.lblCloneInfo.Name = "lblCloneInfo"
-        Me.lblCloneInfo.Size = New System.Drawing.Size(60, 19)
-        Me.lblCloneInfo.TabIndex = 12
-        Me.lblCloneInfo.Text = "Label2"
-        '
-        'Label6
-        '
-        Me.Label6.AutoSize = True
-        Me.Label6.Font = New System.Drawing.Font("Arial", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Label6.Location = New System.Drawing.Point(8, 130)
-        Me.Label6.Name = "Label6"
-        Me.Label6.Size = New System.Drawing.Size(49, 18)
-        Me.Label6.TabIndex = 11
-        Me.Label6.Text = "Clone"
         '
         'lblSkillpoints
         '
@@ -1143,26 +1139,6 @@ Partial Class frmMain
         '
         Me.Timer1.Interval = 1000
         '
-        'Label99
-        '
-        Me.Label99.AutoSize = True
-        Me.Label99.Font = New System.Drawing.Font("Arial", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Label99.Location = New System.Drawing.Point(8, 182)
-        Me.Label99.Name = "Label99"
-        Me.Label99.Size = New System.Drawing.Size(75, 18)
-        Me.Label99.TabIndex = 44
-        Me.Label99.Text = "Paid Until"
-        '
-        'lblPaidUntil
-        '
-        Me.lblPaidUntil.AutoSize = True
-        Me.lblPaidUntil.Font = New System.Drawing.Font("Arial", 12.0!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.lblPaidUntil.Location = New System.Drawing.Point(137, 182)
-        Me.lblPaidUntil.Name = "lblPaidUntil"
-        Me.lblPaidUntil.Size = New System.Drawing.Size(60, 19)
-        Me.lblPaidUntil.TabIndex = 45
-        Me.lblPaidUntil.Text = "Label2"
-        '
         'frmMain
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -1249,8 +1225,6 @@ Partial Class frmMain
     Friend WithEvents Label5 As System.Windows.Forms.Label
     Friend WithEvents lblGender As System.Windows.Forms.Label
     Friend WithEvents Label2 As System.Windows.Forms.Label
-    Friend WithEvents lblCloneInfo As System.Windows.Forms.Label
-    Friend WithEvents Label6 As System.Windows.Forms.Label
     Friend WithEvents lblCha As System.Windows.Forms.Label
     Friend WithEvents Label16 As System.Windows.Forms.Label
     Friend WithEvents lblWill As System.Windows.Forms.Label

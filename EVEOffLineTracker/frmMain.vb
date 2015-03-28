@@ -16,6 +16,8 @@ Public Class frmMain
     Private character As Character
     Private corporation As Corporation
 
+    Dim staticTypes As New EveStaticData()
+
     Private objCharKey As eZet.EveLib.Modules.CharacterKey
     Private objAccountStatus As Models.EveApiResponse(Of Models.Account.AccountStatus)
 
@@ -186,7 +188,7 @@ Public Class frmMain
             UpdateStatus(frm, "Loading Character Sheet...")
             charSheetResponse = Await character.GetCharacterSheetAsync()
 
-            Me.tsslCharSheet.Text = "Cached Until: " & charSheetResponse.CachedUntilAsString
+            Me.tsslCharSheet.Text = "Cached Until: " & charSheetResponse.CachedUntil.ToLocalTime
 
  '           Await fLoadCharacterSheet(charSheetResponse.Result)
             Await Task.Run(Sub() fLoadCharacterSheet(charSheetResponse.Result))
@@ -200,7 +202,7 @@ Public Class frmMain
 
             UpdateStatus(frm, "Loading Character Assets...")
             listAssets = Await character.GetAssetListAsync()
-            Me.tsslAssets.Text = "Cached Until: " & listAssets.CachedUntilAsString
+            Me.tsslAssets.Text = "Cached Until: " & listAssets.CachedUntil.ToLocalTime
 
         Catch ex As Exception
             sListOfErrors += "Failed to get Character Asset data" + vbLf
@@ -212,7 +214,7 @@ Public Class frmMain
 
                 UpdateStatus(frm, "Loading Corporation Assets...")
                 listCorpAssets = Await corporation.GetAssetListAsync()
-                Me.tsslAssets.Text = "Cached Until: " & listCorpAssets.CachedUntilAsString
+                Me.tsslAssets.Text = "Cached Until: " & listCorpAssets.CachedUntil.ToLocalTime
 
             Catch ex As Exception
                 sListOfErrors += "Failed to get Corporation Asset data" + vbLf
@@ -225,7 +227,7 @@ Public Class frmMain
 
             UpdateStatus(frm, "Loading Market Orders...")
             listOrders = Await character.GetMarketOrdersAsync()
-            Me.tsslOrders.Text = "Cached Until: " & listOrders.CachedUntilAsString
+            Me.tsslOrders.Text = "Cached Until: " & listOrders.CachedUntil.ToLocalTime
 
             If corporation IsNot Nothing Then
                 listCorpOrders = Await corporation.GetMarketOrdersAsync()
@@ -241,7 +243,7 @@ Public Class frmMain
         Try
             UpdateStatus(frm, "Loading Wallet Journal...")
             listJournal = Await character.GetWalletJournalAsync(2560)
-            Me.tsslJournal.Text = "Cached Until: " & listJournal.CachedUntilAsString
+            Me.tsslJournal.Text = "Cached Until: " & listJournal.CachedUntil.ToLocalTime
 
             Await fLoadJournal()
         Catch ex As Exception
@@ -251,7 +253,7 @@ Public Class frmMain
         Try
             UpdateStatus(frm, "Loading Wallet Transactions...")
             listTransactions = Await character.GetWalletTransactionsAsync(2560)
-            Me.tsslTransactions.Text = "Cached Until: " & listTransactions.CachedUntilAsString
+            Me.tsslTransactions.Text = "Cached Until: " & listTransactions.CachedUntil.ToLocalTime
 
             Await fLoadTransactions()
         Catch ex As Exception
@@ -265,7 +267,7 @@ Public Class frmMain
             If corporation IsNot Nothing Then
                 listCorpIndustryJobs = Await corporation.GetIndustryJobsHistoryAsync()
             End If
-            Me.tsslIndustry.Text = "Cached Until: " & listCharIndustryJobs.CachedUntilAsString
+            Me.tsslIndustry.Text = "Cached Until: " & listCharIndustryJobs.CachedUntil.ToLocalTime
 
             Await fLoadIndustry()
         Catch ex As Exception
@@ -281,7 +283,7 @@ Public Class frmMain
                 listCorpBlueprints = Await corporation.GetBlueprintsAsync()
             End If
 
-            Me.tsslNotifications.Text = "Cached Until: " & listCharBlueprints.CachedUntilAsString
+            Me.tsslNotifications.Text = "Cached Until: " & listCharBlueprints.CachedUntil.ToLocalTime
 
             Await fLoadBlueprints()
 
@@ -317,10 +319,6 @@ Public Class frmMain
             InvokeControl(lblCorporation, Sub(x) x.Text = charSheet.CorporationName)  'Me.lblCorporation.Text = charSheet.CorporationName
             InvokeControl(lblGender, Sub(x) x.Text = charSheet.Gender)  'Me.lblGender.Text = charSheet.Gender
             InvokeControl(lblSkillpoints, Sub(x) x.Text = String.Format("{0:#,0}", iTotalSkillPoints))  'Me.lblSkillpoints.Text = String.Format("{0:#,0}", iTotalSkillPoints)
-            InvokeControl(lblCloneInfo, Sub(x) x.Text = String.Format("{0:#,0}", charSheet.CloneSkillPoints) & "  (" & charSheet.CloneName & ")")  'Me.lblCloneInfo.Text = String.Format("{0:#,0}", charSheet.CloneSkillPoints) & "  (" & charSheet.CloneName & ")"
-            If iTotalSkillPoints > charSheet.CloneSkillPoints Then
-                InvokeControl(lblSkillpoints, Sub(x) x.ForeColor = Color.Red)  'Me.lblSkillpoints.ForeColor = Color.Red
-            End If
             InvokeControl(lblBalance, Sub(x) x.Text = String.Format("{0:#,#.00 ISK}", charSheet.Balance))  'Me.lblBalance.Text = String.Format("{0:#,#.00 ISK}", charSheet.Balance)
 
             objAccountStatus = Await objCharKey.GetAccountStatusAsync()
@@ -331,36 +329,108 @@ Public Class frmMain
                 InvokeControl(lblPaidUntil, Sub(x) x.ForeColor = Color.Red)
             End If
 
-            If (charSheet.AttributeEnhancers.Intelligence IsNot Nothing) Then
-                iIntEnhanced = charSheet.AttributeEnhancers.Intelligence.Value
-                InvokeControl(lblIntImplant, Sub(x) x.Text = "+" & CStr(iIntEnhanced))  'Me.lblIntImplant.Text = "+" & CStr(iIntEnhanced)
-            Else
-                InvokeControl(lblIntImplant, Sub(x) x.Text = "-")  'Me.lblIntImplant.Text = "-"
-            End If
-            If (charSheet.AttributeEnhancers.Memory IsNot Nothing) Then
-                iMemEnhanced = charSheet.AttributeEnhancers.Memory.Value
-                InvokeControl(lblMemImplant, Sub(x) x.Text = "+" & CStr(iMemEnhanced))  'Me.lblMemImplant.Text = "+" & CStr(iMemEnhanced)
-            Else
-                InvokeControl(lblMemImplant, Sub(x) x.Text = "-")  'Me.lblMemImplant.Text = "-"
-            End If
-            If (charSheet.AttributeEnhancers.Perception IsNot Nothing) Then
-                iPerEnhanced = charSheet.AttributeEnhancers.Perception.Value
-                InvokeControl(lblPerImplant, Sub(x) x.Text = "+" & CStr(iPerEnhanced))  'Me.lblPerImplant.Text = "+" & CStr(iPerEnhanced)
-            Else
-                InvokeControl(lblPerImplant, Sub(x) x.Text = "-")  'Me.lblPerImplant.Text = "-"
-            End If
-            If (charSheet.AttributeEnhancers.Willpower IsNot Nothing) Then
-                iWilEnhanced = charSheet.AttributeEnhancers.Willpower.Value
-                InvokeControl(lblWillImplant, Sub(x) x.Text = "+" & CStr(iWilEnhanced))  'Me.lblWillImplant.Text = "+" & CStr(iWilEnhanced)
-            Else
-                InvokeControl(lblWillImplant, Sub(x) x.Text = "-")  'Me.lblWillImplant.Text = "-"
-            End If
-            If (charSheet.AttributeEnhancers.Charisma IsNot Nothing) Then
-                iChaEnhanced = charSheet.AttributeEnhancers.Charisma.Value
-                InvokeControl(lblChaImplant, Sub(x) x.Text = "+" & CStr(iChaEnhanced))  'Me.lblChaImplant.Text = "+" & CStr(iChaEnhanced)
-            Else
-                InvokeControl(lblChaImplant, Sub(x) x.Text = "-")  'Me.lblChaImplant.Text = "-"
-            End If
+            'If (charSheet.Implants IsNot Nothing) Then
+            '    iIntEnhanced = charSheet.AttributeEnhancers.Intelligence.Value
+            '    InvokeControl(lblIntImplant, Sub(x) x.Text = "+" & CStr(iIntEnhanced))  'Me.lblIntImplant.Text = "+" & CStr(iIntEnhanced)
+            'Else
+            '    InvokeControl(lblIntImplant, Sub(x) x.Text = "-")  'Me.lblIntImplant.Text = "-"
+            'End If
+            'If (charSheet.AttributeEnhancers.Memory IsNot Nothing) Then
+            '    iMemEnhanced = charSheet.AttributeEnhancers.Memory.Value
+            '    InvokeControl(lblMemImplant, Sub(x) x.Text = "+" & CStr(iMemEnhanced))  'Me.lblMemImplant.Text = "+" & CStr(iMemEnhanced)
+            'Else
+            '    InvokeControl(lblMemImplant, Sub(x) x.Text = "-")  'Me.lblMemImplant.Text = "-"
+            'End If
+            'If (charSheet.AttributeEnhancers.Perception IsNot Nothing) Then
+            '    iPerEnhanced = charSheet.AttributeEnhancers.Perception.Value
+            '    InvokeControl(lblPerImplant, Sub(x) x.Text = "+" & CStr(iPerEnhanced))  'Me.lblPerImplant.Text = "+" & CStr(iPerEnhanced)
+            'Else
+            '    InvokeControl(lblPerImplant, Sub(x) x.Text = "-")  'Me.lblPerImplant.Text = "-"
+            'End If
+            'If (charSheet.AttributeEnhancers.Willpower IsNot Nothing) Then
+            '    iWilEnhanced = charSheet.AttributeEnhancers.Willpower.Value
+            '    InvokeControl(lblWillImplant, Sub(x) x.Text = "+" & CStr(iWilEnhanced))  'Me.lblWillImplant.Text = "+" & CStr(iWilEnhanced)
+            'Else
+            '    InvokeControl(lblWillImplant, Sub(x) x.Text = "-")  'Me.lblWillImplant.Text = "-"
+            'End If
+            'If (charSheet.AttributeEnhancers.Charisma IsNot Nothing) Then
+            '    iChaEnhanced = charSheet.AttributeEnhancers.Charisma.Value
+            '    InvokeControl(lblChaImplant, Sub(x) x.Text = "+" & CStr(iChaEnhanced))  'Me.lblChaImplant.Text = "+" & CStr(iChaEnhanced)
+            'Else
+            '    InvokeControl(lblChaImplant, Sub(x) x.Text = "-")  'Me.lblChaImplant.Text = "-"
+            'End If
+            For Each objImplant As Models.Character.Implant In charSheet.Implants
+                If objImplant.TypeName.Contains("Ocular") Then
+                    If objImplant.TypeName.Contains("Beta") Then
+                        iPerEnhanced = 2
+                    ElseIf objImplant.TypeName.Contains("Basic") Then
+                        iPerEnhanced = 3
+                    ElseIf objImplant.TypeName.Contains("Standard") Then
+                        iPerEnhanced = 4
+                    ElseIf objImplant.TypeName.Contains("Improved") Then
+                        iPerEnhanced = 5
+                    Else
+                        iPerEnhanced = 1
+                    End If
+                    InvokeControl(lblPerImplant, Sub(x) x.Text = "+" & CStr(iPerEnhanced))
+                End If
+                If objImplant.TypeName.Contains("Memory") Then
+                    If objImplant.TypeName.Contains("Beta") Then
+                        iMemEnhanced = 2
+                    ElseIf objImplant.TypeName.Contains("Basic") Then
+                        iMemEnhanced = 3
+                    ElseIf objImplant.TypeName.Contains("Standard") Then
+                        iMemEnhanced = 4
+                    ElseIf objImplant.TypeName.Contains("Improved") Then
+                        iMemEnhanced = 5
+                    Else
+                        iMemEnhanced = 1
+                    End If
+                    InvokeControl(lblMemImplant, Sub(x) x.Text = "+" & CStr(iMemEnhanced))
+                End If
+                If objImplant.TypeName.Contains("Neural") Then
+                    If objImplant.TypeName.Contains("Beta") Then
+                        iWilEnhanced = 2
+                    ElseIf objImplant.TypeName.Contains("Basic") Then
+                        iWilEnhanced = 3
+                    ElseIf objImplant.TypeName.Contains("Standard") Then
+                        iWilEnhanced = 4
+                    ElseIf objImplant.TypeName.Contains("Improved") Then
+                        iWilEnhanced = 5
+                    Else
+                        iWilEnhanced = 1
+                    End If
+                    InvokeControl(lblWillImplant, Sub(x) x.Text = "+" & CStr(iWilEnhanced))
+                End If
+                If objImplant.TypeName.Contains("Cybernetic") Then
+                    If objImplant.TypeName.Contains("Beta") Then
+                        iIntEnhanced = 2
+                    ElseIf objImplant.TypeName.Contains("Basic") Then
+                        iIntEnhanced = 3
+                    ElseIf objImplant.TypeName.Contains("Standard") Then
+                        iIntEnhanced = 4
+                    ElseIf objImplant.TypeName.Contains("Improved") Then
+                        iIntEnhanced = 5
+                    Else
+                        iIntEnhanced = 1
+                    End If
+                    InvokeControl(lblIntImplant, Sub(x) x.Text = "+" & CStr(iIntEnhanced))
+                End If
+                If objImplant.TypeName.Contains("Social") Then
+                    If objImplant.TypeName.Contains("Beta") Then
+                        iChaEnhanced = 2
+                    ElseIf objImplant.TypeName.Contains("Basic") Then
+                        iChaEnhanced = 3
+                    ElseIf objImplant.TypeName.Contains("Standard") Then
+                        iChaEnhanced = 4
+                    ElseIf objImplant.TypeName.Contains("Improved") Then
+                        iChaEnhanced = 5
+                    Else
+                        iChaEnhanced = 1
+                    End If
+                    InvokeControl(lblChaImplant, Sub(x) x.Text = "+" & CStr(iChaEnhanced))
+                End If
+            Next
 
             Dim sTotalInt, sTotalMem, sTotalPer, sTotalWil, sTotalCha As String
 
@@ -563,7 +633,7 @@ Public Class frmMain
 
             objItem = EVEItem.Find(objAsset.TypeId)
 
-            If objAsset.Items IsNot Nothing Then
+            If objAsset.Items IsNot Nothing And objItem IsNot Nothing Then
                 For Each objAssetInside In objAsset.Items
                     If objAsset.LocationId > 0 Then
                         If objParent IsNot Nothing Then
@@ -592,7 +662,7 @@ Public Class frmMain
             objNewAsset.TypeID = objAsset.TypeId
 
             drAssets = dtAssets.NewRow
-            If objAsset.TypeId = 0 Then
+            If objAsset.TypeId = 0 Or objItem Is Nothing Then
                 drAssets("Name") = "Unknown"
                 drAssets("Group") = "Unknown"
                 drAssets("Category") = "Unknown"
@@ -750,7 +820,10 @@ Public Class frmMain
                     drOrder = dtOrdersSell.NewRow
                 End If
 
+                'drOrder("ItemName") = staticTypes.GetInvType(objOrder.TypeId).Name
                 If objOrder.TypeId = 0 Then
+                    drOrder("ItemName") = "Unknown"
+                ElseIf EVEItem.Find(objOrder.TypeId) Is Nothing Then
                     drOrder("ItemName") = "Unknown"
                 Else
                     drOrder("ItemName") = EVEItem.Find(objOrder.TypeId).TypeName
@@ -1172,7 +1245,7 @@ Public Class frmMain
 
                     drEntry("JobRunsCol") = "x " & objEntry.Runs.ToString
                     drEntry("ActivityCol") = ActivityIDLookup(objEntry.ActivityId)
-                    drEntry("BlueprintCol") = objEntry.BueprintTypeName
+                    drEntry("BlueprintCol") = objEntry.BlueprintTypeName
                     drEntry("FacilityCol") = objEntry.SolarSystemName & " - " & fGetFacility(objEntry.FacilityId)
                     drEntry("InstallerCol") = objEntry.InstallerName
                     drEntry("InstallDateCol") = objEntry.StartDate.ToLocalTime
@@ -1216,7 +1289,7 @@ Public Class frmMain
 
                     drEntry("JobRunsCol") = "x " & objEntry.Runs.ToString
                     drEntry("ActivityCol") = ActivityIDLookup(objEntry.ActivityId)
-                    drEntry("BlueprintCol") = objEntry.BueprintTypeName
+                    drEntry("BlueprintCol") = objEntry.BlueprintTypeName
                     drEntry("FacilityCol") = objEntry.SolarSystemName & " - " & fGetFacility(objEntry.FacilityId)
                     drEntry("InstallerCol") = objEntry.InstallerName
                     drEntry("InstallDateCol") = objEntry.StartDate.ToLocalTime
